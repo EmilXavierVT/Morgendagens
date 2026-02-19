@@ -1,23 +1,18 @@
 package app;
 
-import app.config.ThymeleafConfig;
-import app.controller.SystemController;
-import io.javalin.Javalin;
-import io.javalin.rendering.template.JavalinThymeleaf;
+import app.config.HibernateConfig;
+import app.utils.Populate;
+import io.javalin.http.util.JsonEscapeUtil;
+import jakarta.persistence.EntityManagerFactory;
 
 public class App {
+
     public static void initiate()
     {
-        Javalin app = Javalin.create(config ->
-        {
-            config.staticFiles.add("/public");
-            config.fileRenderer(new JavalinThymeleaf(ThymeleafConfig.templateEngine()));
-            config.staticFiles.add("/templates");
-        }).start(7072);
+         EntityManagerFactory emf = HibernateConfig.getEntityManagerFactory();
 
-        SystemController.addRoutes(app);
-        // Routing
-        // add controllers here
+        Populate populate = new Populate(emf);
 
+        populate.populate().forEach( (s,e) -> System.out.println(s + e));
     }
 }

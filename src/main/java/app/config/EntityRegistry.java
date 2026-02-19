@@ -1,6 +1,6 @@
 package app.config;
 
-import app.entities.User;
+import app.entities.*;
 import org.hibernate.cfg.Configuration;
 
 final class EntityRegistry {
@@ -9,6 +9,8 @@ final class EntityRegistry {
 
     static void registerEntities(Configuration configuration) {
         configuration.addAnnotatedClass(User.class);
-        // TODO: Add more entities here...
+        configuration.addAnnotatedClass(Product.class);
+        configuration.addAnnotatedClass(Tenant.class);
+        configuration.addAnnotatedClass(Request.class);
     }
 }

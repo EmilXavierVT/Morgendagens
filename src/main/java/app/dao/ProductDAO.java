@@ -1,0 +1,67 @@
+package app.dao;
+
+import app.entities.Product;
+import app.persistence.IDAO;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.TypedQuery;
+
+import java.util.HashSet;
+import java.util.Set;
+
+public class ProductDAO implements IDAO<Product> {
+    private final EntityManagerFactory emf;
+
+    public ProductDAO(EntityManagerFactory emf) {
+        if (emf == null) throw new IllegalArgumentException("EntityManagerFactory cannot be null");
+        this.emf = emf;
+    }
+
+    @Override
+    public Product create(Product product) {
+        try (EntityManager em = emf.createEntityManager()) {
+            em.getTransaction().begin();
+            em.persist(product);
+            em.getTransaction().commit();
+            return product;
+        }
+    }
+
+    @Override
+    public Product getById(Long id) {
+        try (EntityManager em = emf.createEntityManager()) {
+            return em.find(Product.class, id);
+        }
+    }
+
+    @Override
+    public Product update(Product product) {
+        try(EntityManager em = emf.createEntityManager()) {
+            em.getTransaction().begin();
+            Product updatedProduct = em.merge(product);
+            em.getTransaction().commit();
+            return updatedProduct;
+        }
+    }
+
+    @Override
+    public Product delete(Long id) {
+        try(EntityManager em = emf.createEntityManager()) {
+            em.getTransaction().begin();
+            Product product = getById(id);
+            if (product != null) {
+                em.remove(product);
+            }
+            em.getTransaction().commit();
+            return product;
+        }
+    }
+
+    @Override
+    public Set<Product> getAll() {
+        try(EntityManager em = emf.createEntityManager()) {
+            TypedQuery<Product> query = em.createQuery("SELECT p FROM Product p", Product.class);
+            return new HashSet<>(query.getResultList());
+        }
+    }
+}

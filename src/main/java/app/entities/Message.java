@@ -4,6 +4,8 @@ import app.persistence.IEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -11,18 +13,15 @@ import lombok.*;
 @Builder
 @ToString
 @Entity
-@Table(name = "users")
-public class User implements IEntity {
+@Table(name = "messages")
+public class Message implements IEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
-    private Tenant tenant;
-    private int role;
-    private String firstName;
-    private String lastName;
-    private int zipCode;
-    private String email;
-    private String password;
-    private String phoneNumber;
+    private User user;
+    private int thread;
+    private String context;
+    private LocalDateTime date;
+
 }

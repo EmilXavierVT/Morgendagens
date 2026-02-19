@@ -1,15 +1,15 @@
-package app.daos;
+package app.persistence;
 
 import java.util.Set;
 
 public interface IDAO <T> {
     T create(T t);
 
-    T getById(int id);
+    T getById(Long id);
 
     T update(T t);
 
-    T delete(int id);
+    T delete(Long id);
 
     Set<T> getAll();
 }
