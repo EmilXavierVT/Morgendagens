@@ -1,6 +1,5 @@
-package app.dto;
+package app.entities;
 
-import app.entities.Product;
 import jakarta.persistence.*;
 import lombok.*;
 
