@@ -15,6 +15,8 @@ public class WeatherDTO {
     @JsonProperty("daily")
     private DailyDTO dailyDTO;
 
+    private CityDTO cityDTO;
+
 
 
 }
