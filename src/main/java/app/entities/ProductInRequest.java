@@ -12,12 +12,19 @@ import java.sql.Time;
 @Builder
 @ToString
 @Entity
-@Table(name = "products")
-public class ProductInRequest {
+@Table(name = "products_in_requests")
+public class ProductInRequest implements IEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
-    @ManyToOne
+    private Long id;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "request_id")
+    @ToString.Exclude
+    private Request request;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "product_id")
     private Product product;
 
     private Time time;

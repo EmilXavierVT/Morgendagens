@@ -1,6 +1,5 @@
 package app.entities;
 
-import app.persistence.IEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,4 +19,9 @@ public class Product implements IEntity {
     private String description;
     private double price;
     private int type;
+
+    @OneToMany(mappedBy = "product")
+    @ToString.Exclude
+    @Builder.Default
+    private java.util.List<ProductInRequest> productInRequests = new java.util.ArrayList<>();
 }

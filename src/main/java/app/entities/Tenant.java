@@ -1,8 +1,10 @@
 package app.entities;
 
-import app.persistence.IEntity;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -19,5 +21,15 @@ public class Tenant implements IEntity {
     private String name;
     private String type;
     private int status;
+
+    @OneToMany(mappedBy = "tenant", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
+    @ToString.Exclude
+    @Builder.Default
+    private List<User> users = new ArrayList<>();
+
+    @OneToMany(mappedBy = "tenant", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
+    @ToString.Exclude
+    @Builder.Default
+    private List<Request> requests = new ArrayList<>();
 
 }

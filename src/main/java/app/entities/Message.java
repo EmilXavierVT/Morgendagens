@@ -1,6 +1,5 @@
 package app.entities;
 
-import app.persistence.IEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,7 +17,9 @@ public class Message implements IEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @ManyToOne
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "user_id")
+    @ToString.Exclude
     private User user;
     private int thread;
     private String context;
