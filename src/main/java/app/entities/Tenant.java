@@ -3,8 +3,8 @@ package app.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -25,11 +25,11 @@ public class Tenant implements IEntity {
     @OneToMany(mappedBy = "tenant", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
     @ToString.Exclude
     @Builder.Default
-    private List<User> users = new ArrayList<>();
+    private Set<User> users = new HashSet<>();
 
     @OneToMany(mappedBy = "tenant", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
     @ToString.Exclude
     @Builder.Default
-    private List<Request> requests = new ArrayList<>();
+    private Set<Request> requests = new HashSet<>();
 
 }

@@ -1,0 +1,32 @@
+@baseUrl = localhost:7030/tenant
+
+### GET all tenants
+GET {{baseUrl}}/all
+
+### GET tenant by ID
+GET {{baseUrl}}/1
+
+### POST create tenant
+POST {{baseUrl}}/
+
+{
+  "name": "Tenant HTTP Sample",
+  "type": 1,
+  "status": 1,
+  "userIds": [1],
+  "requestIds": [1]
+}
+
+### PUT update tenant
+PUT {{baseUrl}}/1
+
+{
+  "name": "Tenant HTTP Sample Updated",
+  "type": 2,
+  "status": 2,
+  "userIds": [1],
+  "requestIds": [1]
+}
+
+### DELETE tenant
+DELETE {{baseUrl}}/1

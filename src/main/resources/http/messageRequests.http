@@ -1,0 +1,30 @@
+@baseUrl = localhost:7030/message
+
+### GET all messages
+GET {{baseUrl}}/all
+
+### GET message by ID
+GET {{baseUrl}}/1
+
+### POST create message
+POST {{baseUrl}}/
+
+{
+  "userId": 1,
+  "thread": 1,
+  "context": "HTTP test message",
+  "date": "2025-03-05T10:00:00"
+}
+
+### PUT update message
+PUT {{baseUrl}}/1
+
+{
+  "userId": 1,
+  "thread": 2,
+  "context": "Updated HTTP test message",
+  "date": "2025-03-05T11:15:00"
+}
+
+### DELETE message
+DELETE {{baseUrl}}/1

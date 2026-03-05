@@ -1,0 +1,32 @@
+@baseUrl = localhost:7030/product
+
+### GET all products
+GET {{baseUrl}}/all
+
+### GET product by ID
+GET {{baseUrl}}/1
+
+### POST create product
+POST {{baseUrl}}/
+
+{
+  "name": "HTTP Product",
+  "description": "Sample product created via HTTP file",
+  "price": 49.95,
+  "type": 1,
+  "productInRequestIds": [1, 2]
+}
+
+### PUT update product
+PUT {{baseUrl}}/1
+
+{
+  "name": "HTTP Product Updated",
+  "description": "Updated description from HTTP test",
+  "price": 59.99,
+  "type": 2,
+  "productInRequestIds": [1]
+}
+
+### DELETE product
+DELETE {{baseUrl}}/1

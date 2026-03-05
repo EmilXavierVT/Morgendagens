@@ -1,0 +1,34 @@
+@baseUrl = localhost:7030/request
+
+### GET all requests
+GET {{baseUrl}}/all
+
+### GET request by ID
+GET {{baseUrl}}/1
+
+### POST create request
+POST {{baseUrl}}/
+
+{
+  "tenantId": 1,
+  "startDate": 1700000000,
+  "endDate": 1700003600,
+  "status": 1,
+  "type": 1,
+  "productInRequestIds": [1]
+}
+
+### PUT update request
+PUT {{baseUrl}}/1
+
+{
+  "tenantId": 1,
+  "startDate": 1700000000,
+  "endDate": 1700007200,
+  "status": 2,
+  "type": 2,
+  "productInRequestIds": [1, 2]
+}
+
+### DELETE request
+DELETE {{baseUrl}}/1

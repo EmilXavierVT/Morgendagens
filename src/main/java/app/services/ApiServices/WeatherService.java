@@ -39,7 +39,8 @@ public class WeatherService {
 
 
         city = URLEncoder.encode(city, StandardCharsets.UTF_8);
-        String cityURL = "https://api.dataforsyningen.dk/steder?q="+city+"&per_side=1";
+
+        String cityURL = "https://api.dataforsyningen.dk/stednavne?navn="+city;
 
         JsonNode response = ApiFetcher.getApiDataWithMapper(cityURL,objectMapper);
 

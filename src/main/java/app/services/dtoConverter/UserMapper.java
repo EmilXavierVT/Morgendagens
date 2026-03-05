@@ -1,4 +1,4 @@
-package app.services.entityApiServices;
+package app.services.dtoConverter;
 
 import app.dto.UserDTO;
 import app.entities.Message;

@@ -3,7 +3,7 @@ package app.config;
 import app.dto.*;
 import app.entities.*;
 import app.services.ApiServices.ObjectMapperService;
-import app.services.entityApiServices.*;
+import app.services.dtoConverter.*;
 import app.services.entityServices.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterAll;

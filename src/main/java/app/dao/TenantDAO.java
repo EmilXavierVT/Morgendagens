@@ -6,6 +6,7 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.TypedQuery;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class TenantDAO implements IDAO<Tenant> {
@@ -29,7 +30,12 @@ public class TenantDAO implements IDAO<Tenant> {
     @Override
     public Tenant getById(Long id) {
         try(EntityManager em = emf.createEntityManager()) {
-            return em.find(Tenant.class, id);
+            TypedQuery<Tenant> query = em.createQuery(
+                    "SELECT DISTINCT t FROM Tenant t LEFT JOIN FETCH t.users LEFT JOIN FETCH t.requests WHERE t.id = :id",
+                    Tenant.class);
+            query.setParameter("id", id);
+            List<Tenant> resultList = query.getResultList();
+            return resultList.isEmpty() ? null : resultList.get(0);
         }
     }
 
@@ -59,7 +65,9 @@ public class TenantDAO implements IDAO<Tenant> {
     @Override
     public Set<Tenant> getAll() {
         try(EntityManager em = emf.createEntityManager()) {
-            TypedQuery<Tenant> query = em.createQuery("SELECT t FROM Tenant t", Tenant.class);
+            TypedQuery<Tenant> query = em.createQuery(
+                    "SELECT DISTINCT t FROM Tenant t LEFT JOIN FETCH t.users LEFT JOIN FETCH t.requests",
+                    Tenant.class);
             return new HashSet<>(query.getResultList());
         }
     }

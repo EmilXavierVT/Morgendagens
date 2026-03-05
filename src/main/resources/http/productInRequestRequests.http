@@ -1,0 +1,28 @@
+@baseUrl = localhost:7030/product-in-requests
+
+### GET all product-in-requests
+GET {{baseUrl}}/all
+
+### GET product-in-request by ID
+GET {{baseUrl}}/1
+
+### POST create product-in-request
+POST {{baseUrl}}/
+
+{
+  "requestId": 1,
+  "productId": 1,
+  "time": "10:30:00"
+}
+
+### PUT update product-in-request
+PUT {{baseUrl}}/1
+
+{
+  "requestId": 1,
+  "productId": 2,
+  "time": "15:45:00"
+}
+
+### DELETE product-in-request
+DELETE {{baseUrl}}/1

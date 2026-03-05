@@ -1,4 +1,4 @@
-package app.services.entityApiServices;
+package app.services.dtoConverter;
 
 import app.dto.ProductDTO;
 import app.entities.Product;

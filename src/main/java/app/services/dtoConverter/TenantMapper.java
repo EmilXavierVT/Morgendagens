@@ -1,4 +1,4 @@
-package app.services.entityApiServices;
+package app.services.dtoConverter;
 
 import app.dto.TenantDTO;
 import app.entities.Request;
@@ -9,7 +9,9 @@ import app.services.entityServices.UserService;
 import jakarta.persistence.EntityManagerFactory;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class TenantMapper {
     private final UserService userService;
@@ -60,7 +62,7 @@ public class TenantMapper {
         tenant.setStatus(dto.getStatus());
 
         if (dto.getUserIds() != null) {
-            List<User> users = new ArrayList<>();
+            Set<User> users = new HashSet<>();
             for (Long id : dto.getUserIds()) {
                 if (id == null) continue;
                 User u = userService.getById(id);
@@ -73,7 +75,7 @@ public class TenantMapper {
         }
 
         if (dto.getRequestIds() != null) {
-            List<Request> list = new ArrayList<>();
+            Set<Request> list = new HashSet<>();
             for (Long id : dto.getRequestIds()) {
                 if (id == null) continue;
                 Request r = requestService.getById(id);

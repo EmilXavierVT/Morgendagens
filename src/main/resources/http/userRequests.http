@@ -1,0 +1,40 @@
+@baseUrl = localhost:7030/user
+
+### GET all users
+GET {{baseUrl}}/all
+
+### GET user by ID
+GET {{baseUrl}}/1
+
+### POST create user
+POST {{baseUrl}}/
+
+{
+  "tenantId": 1,
+  "role": 2,
+  "firstName": "HTTP",
+  "lastName": "User",
+  "zipCode": 12345,
+  "email": "http.user@example.com",
+  "password": "secret",
+  "phoneNumber": "555-0100",
+  "messageIds": [1, 2]
+}
+
+### PUT update user
+PUT {{baseUrl}}/1
+
+{
+  "tenantId": 1,
+  "role": 3,
+  "firstName": "HTTP",
+  "lastName": "User Updated",
+  "zipCode": 54321,
+  "email": "http.user.updated@example.com",
+  "password": "newsecret",
+  "phoneNumber": "555-0101",
+  "messageIds": [1]
+}
+
+### DELETE user
+DELETE {{baseUrl}}/1

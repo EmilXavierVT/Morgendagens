@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CityDTO {
-    @JsonProperty("primærtnavn")
+    @JsonProperty("navn")
     private String name;
     @JsonProperty("visueltcenter")
     private String[] center;
