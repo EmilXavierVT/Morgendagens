@@ -1,4 +1,4 @@
-package app.services.ApiServices.routes;
+package app.services.apiServices.routes;
 
 import app.dto.ProductInRequestDTO;
 import app.entities.ProductInRequest;

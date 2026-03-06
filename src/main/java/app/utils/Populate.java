@@ -3,7 +3,7 @@ package app.utils;
 import app.dao.*;
 import app.entities.*;
 import app.entities.IEntity;
-import app.services.ApiServices.WeatherService;
+import app.services.apiServices.WeatherService;
 import jakarta.persistence.EntityManagerFactory;
 
 import java.util.ArrayList;

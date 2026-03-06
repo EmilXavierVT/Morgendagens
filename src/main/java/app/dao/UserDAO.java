@@ -21,6 +21,7 @@ public class UserDAO implements IDAO<User> {
     public User create(User user) {
         try (EntityManager em = emf.createEntityManager()) {
             em.getTransaction().begin();
+            user.getMessages().forEach(message -> message.setUser(user));
             em.persist(user);
             em.getTransaction().commit();
         return user;

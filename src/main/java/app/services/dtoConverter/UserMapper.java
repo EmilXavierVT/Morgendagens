@@ -68,12 +68,14 @@ public class UserMapper {
         if (dto.getMessageIds() != null) {
             List<Message> messages = new ArrayList<>();
             for (Long messageId : dto.getMessageIds()) {
-                if (messageId == null) continue;
-                Message message = messageService.getById(messageId);
+                if (messageId != null) {
+                    Message message = messageService.getById(messageId);
+
                 if (message != null) {
                     message.setUser(user);
                     messages.add(message);
                 }
+            }
             }
             user.setMessages(messages);
         }

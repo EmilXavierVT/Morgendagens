@@ -1,10 +1,8 @@
 package app;
 
 import app.config.HibernateConfig;
-import app.services.ApiServices.routes.Routes;
-import app.utils.Populate;
+import app.services.apiServices.routes.Routes;
 import io.javalin.Javalin;
-import io.javalin.http.util.JsonEscapeUtil;
 import jakarta.persistence.EntityManagerFactory;
 
 public class App {
@@ -20,9 +18,6 @@ public class App {
 
     public void javalinService(){
 
-
-        EntityManagerFactory emf = HibernateConfig.getEntityManagerFactory();
-        System.out.println(emf.toString());
         Routes routes = new Routes();
 
         Javalin app = Javalin.create(

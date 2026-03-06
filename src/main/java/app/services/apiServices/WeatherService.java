@@ -1,4 +1,4 @@
-package app.services.ApiServices;
+package app.services.apiServices;
 
 import app.dto.CityDTO;
 import app.dto.WeatherDTO;

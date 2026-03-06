@@ -1,4 +1,4 @@
-package app.services.ApiServices.routes;
+package app.services.apiServices.routes;
 
 import app.dto.MessageDTO;
 import app.entities.Message;
@@ -6,13 +6,18 @@ import app.services.dtoConverter.MessageMapper;
 import app.services.entityServices.MessageService;
 import io.javalin.http.Context;
 import jakarta.persistence.EntityManagerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class MessageRoutes {
     private final MessageService messageService;
     private final MessageMapper messageMapper;
+    private static final Logger logger = LoggerFactory.getLogger(MessageRoutes.class);
+    private static final Logger debugLogger = LoggerFactory.getLogger("app");
 
     public MessageRoutes(EntityManagerFactory emf) {
         if (emf == null) throw new IllegalArgumentException("EntityManagerFactory cannot be null");
@@ -21,6 +26,8 @@ public class MessageRoutes {
     }
 
     public void getAll(Context ctx) {
+    logger.info("getAll");
+        debugLogger.info("getAll");
         List<MessageDTO> dtos = new ArrayList<>();
         for (Message message : messageService.getAll()) {
             dtos.add(messageMapper.toDto(message));

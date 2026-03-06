@@ -12,7 +12,7 @@ POST {{baseUrl}}/
 {
   "tenantId": 1,
   "role": 2,
-  "firstName": "HTTP",
+  "firstName": "Daniel",
   "lastName": "User",
   "zipCode": 12345,
   "email": "http.user@example.com",

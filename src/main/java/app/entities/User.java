@@ -1,5 +1,6 @@
 package app.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,6 +15,7 @@ import java.util.List;
 @ToString
 @Entity
 @Table(name = "users")
+
 public class User implements IEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
