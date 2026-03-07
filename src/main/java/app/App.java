@@ -2,23 +2,25 @@ package app;
 
 import app.config.HibernateConfig;
 import app.services.apiServices.routes.Routes;
+import app.utils.Populate;
 import io.javalin.Javalin;
 import jakarta.persistence.EntityManagerFactory;
 
 public class App {
 
-//    public static void initiate()
-//    {
-//         EntityManagerFactory emf = HibernateConfig.getEntityManagerFactory();
-//
-//        Populate populate = new Populate(emf);
-//
-//        populate.populate().forEach( (s,e) -> System.out.println(s + e));
-//    }
+    public static void initiate()
+    {
+         EntityManagerFactory emf = HibernateConfig.getEntityManagerFactory();
+
+        Populate populate = new Populate(emf);
+
+        populate.populate().forEach( (s,e) -> System.out.println(s + e));
+    }
 
     public void javalinService(){
 
         Routes routes = new Routes();
+        initiate();
 
         Javalin app = Javalin.create(
                 config ->{

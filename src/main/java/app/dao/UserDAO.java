@@ -1,4 +1,5 @@
 package app.dao;
+import app.entities.Message;
 import app.entities.User;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -6,6 +7,8 @@ import jakarta.persistence.TypedQuery;
 
 
 import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 
@@ -21,7 +24,20 @@ public class UserDAO implements IDAO<User> {
     public User create(User user) {
         try (EntityManager em = emf.createEntityManager()) {
             em.getTransaction().begin();
-            user.getMessages().forEach(message -> message.setUser(user));
+            List<Message> managedMessages = new ArrayList<>();
+            for (Message message : user.getMessages()) {
+                if (message == null) continue;
+                Message managedMessage = message;
+                if (message.getId() != null) {
+                    managedMessage = em.find(Message.class, message.getId());
+                    if (managedMessage == null) {
+                        throw new IllegalArgumentException("Message with id " + message.getId() + " does not exist");
+                    }
+                }
+                managedMessage.setUser(user);
+                managedMessages.add(managedMessage);
+            }
+            user.setMessages(managedMessages);
             em.persist(user);
             em.getTransaction().commit();
         return user;

@@ -6,6 +6,8 @@ import app.services.dtoConverter.UserMapper;
 import app.services.entityServices.UserService;
 import io.javalin.http.Context;
 import jakarta.persistence.EntityManagerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +15,8 @@ import java.util.List;
 public class UserRoutes {
     private final UserService userService;
     private final UserMapper userMapper;
+    private static final Logger logger = LoggerFactory.getLogger(UserRoutes.class);
+    private static final Logger debugLogger = LoggerFactory.getLogger("app.services.apiServices.routes");
 
     public UserRoutes(EntityManagerFactory emf) {
         if (emf == null) throw new IllegalArgumentException("EntityManagerFactory cannot be null");
@@ -39,6 +43,8 @@ public class UserRoutes {
     }
 
     public void create(Context ctx) {
+        logger.info("Creating user");
+        debugLogger.info("Creating user");
         UserDTO dto = ctx.bodyValidator(UserDTO.class).get();
         User user = userMapper.fromDto(dto);
         User created = userService.create(user);
