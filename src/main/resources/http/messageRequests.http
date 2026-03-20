@@ -1,16 +1,18 @@
-@baseUrl = localhost:7030/message
+@baseUrl = {{url}}/message
 
 ### GET all messages
 GET {{baseUrl}}/all
+Accept: application/json
 
 ### GET message by ID
 GET {{baseUrl}}/1
-
+Accept: application/json
 ### POST create message
 POST {{baseUrl}}/
+Content-Type: application/json
 
 {
-  "userId": 1,
+  "userId": 3,
   "thread": 1,
   "context": "HTTP test message",
   "date": "2025-03-05T10:00:00"
@@ -18,13 +20,14 @@ POST {{baseUrl}}/
 
 ### PUT update message
 PUT {{baseUrl}}/1
+Content-Type: application/json
 
 {
-  "userId": 1,
+  "userId": 3,
   "thread": 2,
   "context": "Updated HTTP test message",
   "date": "2025-03-05T11:15:00"
 }
 
 ### DELETE message
-DELETE {{baseUrl}}/1
+DELETE {{baseUrl}}/23

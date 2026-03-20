@@ -1,13 +1,16 @@
-@baseUrl = localhost:7030/user
+@baseUrl = {{url}}/user
 
 ### GET all users
 GET {{baseUrl}}/all
+Accept: application/json
 
 ### GET user by ID
 GET {{baseUrl}}/1
+Accept: application/json
 
 ### POST create user
 POST {{baseUrl}}/
+Content-Type: application/json
 
 {
   "tenantId": 1,
@@ -23,6 +26,7 @@ POST {{baseUrl}}/
 
 ### PUT update user
 PUT {{baseUrl}}/1
+Content-Type: application/json
 
 {
   "tenantId": 1,

@@ -8,7 +8,16 @@ import jakarta.persistence.EntityManagerFactory;
 import static io.javalin.apibuilder.ApiBuilder.*;
 
 public class Routes {
-    private final EntityManagerFactory emf = HibernateConfig.getEntityManagerFactory();
+    private final EntityManagerFactory emf;
+
+    public Routes() {
+        this(HibernateConfig.getEntityManagerFactory());
+    }
+
+    public Routes(EntityManagerFactory emf) {
+        if (emf == null) throw new IllegalArgumentException("EntityManagerFactory cannot be null");
+        this.emf = emf;
+    }
 
     public EndpointGroup getRoutes() {
         TenantRoutes tenantRoutes = new TenantRoutes(emf);

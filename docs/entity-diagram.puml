@@ -1,0 +1,70 @@
+@startuml
+!pragma layout smetana
+hide circle
+skinparam linetype ortho
+
+entity "tenants" as tenants {
+  *id : BIGINT <<PK>>
+  --
+  name : VARCHAR
+  type : VARCHAR
+  status : INT
+}
+
+entity "users" as users {
+  *id : BIGINT <<PK>>
+  --
+  tenant_id : BIGINT <<FK>>
+  role : INT
+  first_name : VARCHAR
+  last_name : VARCHAR
+  zip_code : INT
+  email : VARCHAR
+  password : VARCHAR
+  phone_number : VARCHAR
+}
+
+entity "requests" as requests {
+  *id : BIGINT <<PK>>
+  --
+  tenant_id : BIGINT <<FK>>
+  start_date : DATETIME
+  end_date : DATETIME
+  location : VARCHAR
+  status : INT
+  type : INT
+}
+
+entity "products" as products {
+  *id : BIGINT <<PK>>
+  --
+  name : VARCHAR
+  description : VARCHAR
+  price : DOUBLE
+  type : INT
+}
+
+entity "products_in_requests" as pir {
+  *id : BIGINT <<PK>>
+  --
+  request_id : BIGINT <<FK>>
+  product_id : BIGINT <<FK>>
+  time : TIME
+}
+
+entity "messages" as messages {
+  *id : BIGINT <<PK>>
+  --
+  user_id : BIGINT <<FK>>
+  thread : INT
+  context : VARCHAR
+  date : DATETIME
+}
+
+tenants ||--o{ users : tenant_id
+tenants ||--o{ requests : tenant_id
+users ||--o{ messages : user_id
+requests ||--o{ pir : request_id
+products ||--o{ pir : product_id
+
+@enduml

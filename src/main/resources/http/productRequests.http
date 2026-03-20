@@ -1,13 +1,16 @@
-@baseUrl = localhost:7030/product
+@baseUrl = {{url}}/product
 
 ### GET all products
 GET {{baseUrl}}/all
+Accept: application/json
+
 
 ### GET product by ID
 GET {{baseUrl}}/1
-
+Accept: application/json
 ### POST create product
 POST {{baseUrl}}/
+Content-Type: application/json
 
 {
   "name": "HTTP Product",
@@ -19,6 +22,7 @@ POST {{baseUrl}}/
 
 ### PUT update product
 PUT {{baseUrl}}/1
+Content-Type: application/json
 
 {
   "name": "HTTP Product Updated",

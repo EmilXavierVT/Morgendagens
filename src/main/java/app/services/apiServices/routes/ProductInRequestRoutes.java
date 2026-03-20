@@ -43,6 +43,7 @@ public class ProductInRequestRoutes {
         ProductInRequest pir = productInRequestMapper.fromDto(dto);
         ProductInRequest created = productInRequestService.create(pir);
         ctx.status(201).json(productInRequestMapper.toDto(created));
+
     }
 
     public void update(Context ctx) {
@@ -66,5 +67,6 @@ public class ProductInRequestRoutes {
             return;
         }
         ctx.status(204);
+
     }
 }

@@ -50,6 +50,7 @@ public class MessageRoutes {
         Message message = messageMapper.fromDto(dto);
         Message created = messageService.create(message);
         ctx.status(201).json(messageMapper.toDto(created));
+
     }
 
     public void update(Context ctx) {
@@ -73,5 +74,6 @@ public class MessageRoutes {
             return;
         }
         ctx.status(204);
+
     }
 }

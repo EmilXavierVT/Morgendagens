@@ -43,6 +43,7 @@ public class RequestRoutes {
         Request request = requestMapper.fromDto(dto);
         Request created = requestService.create(request);
         ctx.status(201).json(requestMapper.toDto(created));
+
     }
 
     public void update(Context ctx) {
@@ -56,6 +57,7 @@ public class RequestRoutes {
             return;
         }
         ctx.json(requestMapper.toDto(updated));
+
     }
 
     public void delete(Context ctx) {
@@ -66,5 +68,6 @@ public class RequestRoutes {
             return;
         }
         ctx.status(204);
+
     }
 }

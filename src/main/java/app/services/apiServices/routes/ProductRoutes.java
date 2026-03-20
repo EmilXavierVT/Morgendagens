@@ -43,6 +43,7 @@ public class ProductRoutes {
         Product product = productMapper.fromDto(dto);
         Product created = productService.create(product);
         ctx.status(201).json(productMapper.toDto(created));
+
     }
 
     public void update(Context ctx) {
@@ -55,7 +56,7 @@ public class ProductRoutes {
             ctx.status(404).result("Product not found");
             return;
         }
-        ctx.json(productMapper.toDto(updated));
+        ctx.json(productMapper.toDto(productService.getById(id)));
     }
 
     public void delete(Context ctx) {
@@ -66,5 +67,6 @@ public class ProductRoutes {
             return;
         }
         ctx.status(204);
+
     }
 }

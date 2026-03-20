@@ -94,8 +94,9 @@ class ServiceCrudIntegrationTest {
                 .tenant(tenant)
                 .type(1)
                 .status(1)
-                .startDate(System.currentTimeMillis())
-                .endDate(System.currentTimeMillis() + 86400000L)
+                .startDate(LocalDateTime.now())
+                .endDate(LocalDateTime.now().plusDays(1))
+                .location("Aarhus")
                 .build();
         requestService.create(request);
         assertNotNull(request.getId());

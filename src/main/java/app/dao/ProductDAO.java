@@ -3,6 +3,7 @@ package app.dao;
 import app.entities.Product;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.TypedQuery;
 
 import java.util.HashSet;
@@ -22,15 +23,13 @@ public class ProductDAO implements IDAO<Product> {
             em.getTransaction().begin();
             em.persist(product);
             em.getTransaction().commit();
-            return product;
+            return getByIdWithProductInRequests(product.getId());
         }
     }
 
     @Override
     public Product getById(Long id) {
-        try (EntityManager em = emf.createEntityManager()) {
-            return em.find(Product.class, id);
-        }
+        return getByIdWithProductInRequests(id);
     }
 
     @Override
@@ -39,7 +38,7 @@ public class ProductDAO implements IDAO<Product> {
             em.getTransaction().begin();
             Product updatedProduct = em.merge(product);
             em.getTransaction().commit();
-            return updatedProduct;
+            return getByIdWithProductInRequests(updatedProduct.getId());
         }
     }
 
@@ -47,7 +46,7 @@ public class ProductDAO implements IDAO<Product> {
     public Product delete(Long id) {
         try(EntityManager em = emf.createEntityManager()) {
             em.getTransaction().begin();
-            Product product = getById(id);
+            Product product = em.find(Product.class, id);
             if (product != null) {
                 em.remove(product);
             }
@@ -59,8 +58,24 @@ public class ProductDAO implements IDAO<Product> {
     @Override
     public Set<Product> getAll() {
         try(EntityManager em = emf.createEntityManager()) {
-            TypedQuery<Product> query = em.createQuery("SELECT p FROM Product p", Product.class);
+            TypedQuery<Product> query = em.createQuery(
+                    "SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.productInRequests",
+                    Product.class
+            );
             return new HashSet<>(query.getResultList());
+        }
+    }
+
+    public Product getByIdWithProductInRequests(Long id) {
+        try (EntityManager em = emf.createEntityManager()) {
+            TypedQuery<Product> query = em.createQuery(
+                    "SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.productInRequests WHERE p.id = :id",
+                    Product.class
+            );
+            query.setParameter("id", id);
+            return query.getSingleResult();
+        } catch (NoResultException ex) {
+            return null;
         }
     }
 }

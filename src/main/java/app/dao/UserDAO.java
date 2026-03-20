@@ -3,6 +3,7 @@ import app.entities.Message;
 import app.entities.User;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.NoResultException;
 import jakarta.persistence.TypedQuery;
 
 
@@ -40,16 +41,14 @@ public class UserDAO implements IDAO<User> {
             user.setMessages(managedMessages);
             em.persist(user);
             em.getTransaction().commit();
-        return user;
+            return getByIdWithMessages(user.getId());
         }
     }
 
+
     @Override
     public User getById(Long id) {
-        try (EntityManager em = emf.createEntityManager()) {
-            return em.find(User.class, id);
-
-        }
+        return getByIdWithMessages(id);
     }
 
     @Override
@@ -58,7 +57,7 @@ public class UserDAO implements IDAO<User> {
              em.getTransaction().begin();
              User updatedUser = em.merge(user);
              em.getTransaction().commit();
-             return updatedUser;
+             return getByIdWithMessages(updatedUser.getId());
          }
     }
 
@@ -66,7 +65,7 @@ public class UserDAO implements IDAO<User> {
     public User delete(Long id) {
         try(EntityManager em = emf.createEntityManager()) {
             em.getTransaction().begin();
-            User user = getById(id);
+            User user = em.find(User.class, id);
             if (user != null) {
                 em.remove(user);
             }
@@ -78,8 +77,24 @@ public class UserDAO implements IDAO<User> {
     @Override
     public Set<User> getAll() {
         try(EntityManager em = emf.createEntityManager()) {
-            TypedQuery<User> query = em.createQuery("SELECT u FROM User u", User.class);
+            TypedQuery<User> query = em.createQuery(
+                    "SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.messages",
+                    User.class
+            );
             return new HashSet<>(query.getResultList());
+        }
+    }
+
+    public User getByIdWithMessages(Long id) {
+        try (EntityManager em = emf.createEntityManager()) {
+            TypedQuery<User> query = em.createQuery(
+                    "SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.messages WHERE u.id = :id",
+                    User.class
+            );
+            query.setParameter("id", id);
+            return query.getSingleResult();
+        } catch (NoResultException ex) {
+            return null;
         }
     }
 }

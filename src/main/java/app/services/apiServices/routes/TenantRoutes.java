@@ -66,5 +66,6 @@ public class TenantRoutes {
         Tenant tenant = tenantMapper.fromDto(tenantdto);
         Tenant created = tenantService.create(tenant);
         ctx.status(201).json(tenantMapper.toDto(created));
+
     }
 }

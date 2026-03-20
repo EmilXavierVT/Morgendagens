@@ -27,6 +27,7 @@ public class RequestMapper {
         dto.setId(request.getId());
         dto.setStartDate(request.getStartDate());
         dto.setEndDate(request.getEndDate());
+        dto.setLocation(request.getLocation());
         dto.setStatus(request.getStatus());
         dto.setType(request.getType());
         dto.setWeatherDTO(request.getWeatherDTO());
@@ -52,6 +53,7 @@ public class RequestMapper {
         request.setId(dto.getId());
         request.setStartDate(dto.getStartDate());
         request.setEndDate(dto.getEndDate());
+        request.setLocation(dto.getLocation());
         request.setStatus(dto.getStatus());
         request.setType(dto.getType());
         request.setWeatherDTO(dto.getWeatherDTO());

@@ -1,18 +1,21 @@
-@baseUrl = localhost:7030/request
+@baseUrl ={{url}}/request
 
 ### GET all requests
 GET {{baseUrl}}/all
+Accept: application/json
 
 ### GET request by ID
 GET {{baseUrl}}/1
-
+Accept: application/json
 ### POST create request
 POST {{baseUrl}}/
+Content-Type: application/json
 
 {
   "tenantId": 1,
-  "startDate": 1700000000,
-  "endDate": 1700003600,
+  "startDate": "2026-03-13T08:00:00",
+  "endDate": "2026-03-13T09:00:00",
+  "location": "Copenhagen",
   "status": 1,
   "type": 1,
   "productInRequestIds": [1]
@@ -20,11 +23,13 @@ POST {{baseUrl}}/
 
 ### PUT update request
 PUT {{baseUrl}}/1
+Content-Type: application/json
 
 {
   "tenantId": 1,
-  "startDate": 1700000000,
-  "endDate": 1700007200,
+  "startDate": "2026-03-13T10:00:00",
+  "endDate": "2026-03-13T12:00:00",
+  "location": "Aarhus",
   "status": 2,
   "type": 2,
   "productInRequestIds": [1, 2]

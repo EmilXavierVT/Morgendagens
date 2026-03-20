@@ -16,6 +16,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import jakarta.persistence.EntityManagerFactory;
 
+import java.time.LocalDateTime;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -120,8 +121,9 @@ class EntityMapperIntegrationTest {
         // build JSON for a Request that refers to the tenant and product in request
         String json = "{" +
                 "\"tenantId\":" + tenant.getId() + "," +
-                "\"startDate\":123456789," +
-                "\"endDate\":987654321," +
+                "\"startDate\":\"2026-03-13T10:15:30\"," +
+                "\"endDate\":\"2026-03-14T12:45:30\"," +
+                "\"location\":\"Copenhagen\"," +
                 "\"status\":3," +
                 "\"type\":4" +
                 // productInRequestIds will be empty initially
@@ -133,6 +135,7 @@ class EntityMapperIntegrationTest {
         requestService.create(reqEntity);
         assertNotNull(reqEntity.getId());
         assertEquals(tenant.getId(), reqEntity.getTenant().getId());
-        assertEquals(123456789L, reqEntity.getStartDate());
+        assertEquals(LocalDateTime.of(2026, 3, 13, 10, 15, 30), reqEntity.getStartDate());
+        assertEquals("Copenhagen", reqEntity.getLocation());
     }
 }

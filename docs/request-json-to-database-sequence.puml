@@ -1,0 +1,67 @@
+@startuml
+title POST /requests - JSON to Database
+autonumber
+
+actor Client
+participant "RequestRoutes" as Routes
+participant "Javalin Context" as Ctx
+participant "RequestMapper" as Mapper
+participant "TenantService" as TenantSvc
+participant "TenantDAO" as TenantDAO
+participant "ProductInRequestService" as PirSvc
+participant "ProductInRequestDAO" as PirDAO
+participant "RequestService" as ReqSvc
+participant "RequestDAO" as ReqDAO
+participant "EntityManager / JPA" as JPA
+database "Database" as DB
+
+Client -> Routes : POST /requests + JSON body
+Routes -> Ctx : bodyValidator(RequestDTO).get()
+Ctx --> Routes : RequestDTO
+
+Routes -> Mapper : fromDto(dto)
+Mapper -> TenantSvc : getById(dto.tenantId)
+TenantSvc -> TenantDAO : getById(tenantId)
+TenantDAO -> JPA : em.find/query Tenant
+JPA -> DB : SELECT tenant...
+DB --> JPA : tenant row
+JPA --> TenantDAO : Tenant
+TenantDAO --> TenantSvc : Tenant
+TenantSvc --> Mapper : Tenant
+
+loop each productInRequestId
+  Mapper -> PirSvc : getById(pirId)
+  PirSvc -> PirDAO : getById(pirId)
+  PirDAO -> JPA : em.find(ProductInRequest, id)
+  JPA -> DB : SELECT product_in_request...
+  DB --> JPA : product_in_request row
+  JPA --> PirDAO : ProductInRequest
+  PirDAO --> PirSvc : ProductInRequest
+  PirSvc --> Mapper : ProductInRequest
+end
+
+Mapper --> Routes : Request entity
+Routes -> ReqSvc : create(request)
+ReqSvc -> ReqDAO : create(request)
+ReqDAO -> JPA : begin transaction
+ReqDAO -> JPA : attachTenant(request.tenant)
+JPA -> DB : SELECT tenant by id
+DB --> JPA : managed tenant
+ReqDAO -> JPA : attachProductInRequests(...)
+loop each ProductInRequest with id
+  JPA -> DB : SELECT product_in_request by id
+  DB --> JPA : managed product_in_request
+end
+ReqDAO -> JPA : persist(request)
+JPA -> DB : INSERT into requests
+DB --> JPA : generated id
+ReqDAO -> JPA : commit transaction
+ReqDAO --> ReqSvc : created Request
+ReqSvc --> Routes : created Request
+
+Routes -> Mapper : toDto(created)
+Mapper --> Routes : RequestDTO
+Routes -> Ctx : status(201).json(dto)
+Ctx --> Client : 201 Created + JSON
+
+@enduml

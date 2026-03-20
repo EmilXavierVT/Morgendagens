@@ -57,7 +57,7 @@ public class TenantDAO implements IDAO<Tenant> {
             tenant.setRequests(managedRequests);
             em.persist(tenant);
             em.getTransaction().commit();
-            return tenant;
+            return getById(tenant.getId());
         }
     }
 
@@ -79,7 +79,7 @@ public class TenantDAO implements IDAO<Tenant> {
             em.getTransaction().begin();
             Tenant updated = em.merge(tenant);
             em.getTransaction().commit();
-            return updated;
+            return getById(updated.getId());
         }
     }
 

@@ -1,0 +1,74 @@
+@startuml
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+hide empty members
+
+interface IEntity {
+  +getId(): Long
+}
+
+class Tenant {
+  -id: Long
+  -name: String
+  -type: String
+  -status: int
+}
+
+class User {
+  -id: Long
+  -role: int
+  -firstName: String
+  -lastName: String
+  -zipCode: int
+  -email: String
+  -password: String
+  -phoneNumber: String
+}
+
+class Request {
+  -id: Long
+  -startDate: LocalDateTime
+  -endDate: LocalDateTime
+  -location: String
+  -status: int
+  -type: int
+  -weatherDTO: WeatherDTO <<transient>>
+}
+
+class Product {
+  -id: Long
+  -name: String
+  -description: String
+  -price: double
+  -type: int
+}
+
+class ProductInRequest {
+  -id: Long
+  -time: Time
+}
+
+class Message {
+  -id: Long
+  -thread: int
+  -context: String
+  -date: LocalDateTime
+}
+
+class WeatherDTO
+
+IEntity <|.. Tenant
+IEntity <|.. User
+IEntity <|.. Request
+IEntity <|.. Product
+IEntity <|.. ProductInRequest
+IEntity <|.. Message
+
+Tenant "1" <-- "0..*" User : tenant
+Tenant "1" <-- "0..*" Request : tenant
+User "1" <-- "0..*" Message : user
+Request "1" <-- "0..*" ProductInRequest : request
+Product "1" <-- "0..*" ProductInRequest : product
+Request ..> WeatherDTO : weatherDTO
+
+@enduml

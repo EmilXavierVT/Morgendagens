@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -23,8 +24,9 @@ public class Request implements IEntity {
     @JoinColumn(name = "tenant_id")
     @ToString.Exclude
     private Tenant tenant;
-    private Long startDate;
-    private Long endDate;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+    private String location;
     private int status;
     private int type;
     @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)

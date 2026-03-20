@@ -9,6 +9,7 @@ import jakarta.persistence.EntityManagerFactory;
 import java.util.ArrayList;
 import java.util.Map;
 import java.sql.Time;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 public class Populate {
@@ -59,10 +60,10 @@ public class Populate {
                 .tenant(tenant)
                 .type(1)
                 .status(1)
-                .startDate(System.currentTimeMillis())
-                .endDate(System.currentTimeMillis() + 86400000L)
+                .startDate(LocalDateTime.now())
+                .endDate(LocalDateTime.now().plusDays(1))
+                .location("Copenhagen")
                 .productsInRequest(new ArrayList<>())
-                .weatherDTO(WeatherService.getWeather("Odense"))
                 .build();
 
         tenant.getRequests().add(request);

@@ -1,0 +1,51 @@
+@startuml
+title Request API Activity Flow
+
+start
+:Client calls /api/requests endpoint;
+
+if (Method?) then (GET /requests)
+  :Fetch all requests;
+  :Map entities to RequestDTO;
+  :Return 200 + JSON list;
+elseif (GET /requests/{id})
+  :Read id from path;
+  :Fetch request by id;
+  if (Request exists?) then (yes)
+    :Map to RequestDTO;
+    :Return 200 + JSON;
+  else (no)
+    :Return 404 "Request not found";
+  endif
+elseif (POST /requests)
+  :Validate RequestDTO from body;
+  :Map DTO -> entity;
+  :Persist request;
+  :Map entity -> DTO;
+  :Return 201 + JSON;
+elseif (PUT /requests/{id})
+  :Read id from path;
+  :Validate RequestDTO from body;
+  :Set dto.id = path id;
+  :Map DTO -> entity;
+  :Update request;
+  if (Updated entity exists?) then (yes)
+    :Map entity -> DTO;
+    :Return 200 + JSON;
+  else (no)
+    :Return 404 "Request not found";
+  endif
+elseif (DELETE /requests/{id})
+  :Read id from path;
+  :Delete request by id;
+  if (Deleted entity exists?) then (yes)
+    :Return 204 No Content;
+  else (no)
+    :Return 404 "Request not found";
+  endif
+else (other)
+  :Return method not allowed;
+endif
+
+stop
+@enduml

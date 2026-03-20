@@ -1,5 +1,6 @@
 package app.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,7 +21,8 @@ public class Product implements IEntity {
     private double price;
     private int type;
 
-    @OneToMany(mappedBy = "product")
+    @OneToMany(mappedBy = "product", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @JsonIgnore
     @ToString.Exclude
     @Builder.Default
     private java.util.List<ProductInRequest> productInRequests = new java.util.ArrayList<>();

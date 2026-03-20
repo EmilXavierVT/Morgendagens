@@ -1,13 +1,15 @@
-@baseUrl = localhost:7030/product-in-requests
+@baseUrl = {{url}}/product-in-requests
 
 ### GET all product-in-requests
 GET {{baseUrl}}/all
+Accept: application/json
 
 ### GET product-in-request by ID
 GET {{baseUrl}}/1
-
+Accept: application/json
 ### POST create product-in-request
 POST {{baseUrl}}/
+Content-Type: application/json
 
 {
   "requestId": 1,
@@ -17,6 +19,7 @@ POST {{baseUrl}}/
 
 ### PUT update product-in-request
 PUT {{baseUrl}}/1
+Content-Type: application/json
 
 {
   "requestId": 1,

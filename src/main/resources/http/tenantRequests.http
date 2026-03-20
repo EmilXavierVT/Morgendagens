@@ -1,13 +1,16 @@
-@baseUrl = localhost:7030/tenant
+@baseUrl = {{url}}/tenant
 
 ### GET all tenants
 GET {{baseUrl}}/all
+Accept: application/json
 
 ### GET tenant by ID
 GET {{baseUrl}}/1
+Accept: application/json
 
 ### POST create tenant
 POST {{baseUrl}}/
+Content-Type: application/json
 
 {
   "name": "Tenant HTTP Sample",
@@ -19,6 +22,7 @@ POST {{baseUrl}}/
 
 ### PUT update tenant
 PUT {{baseUrl}}/1
+Content-Type: application/json
 
 {
   "name": "Tenant HTTP Sample Updated",
