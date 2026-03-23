@@ -21,6 +21,8 @@
         <logback-classic>1.5.27</logback-classic>
         <org.slf4j>2.0.17</org.slf4j>
         <hamcrest>3.0</hamcrest>
+        <jbcrypt.version>0.4</jbcrypt.version>
+
     </properties>
 
     <dependencies>
@@ -103,6 +105,12 @@
             <version>2.0.17</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+            <version>10.7</version>
+        </dependency>
+
         <!-- Logback Classic (SLF4J implementation) -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -142,6 +150,11 @@
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <version>6.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>${jbcrypt.version}</version>
         </dependency>
 
 

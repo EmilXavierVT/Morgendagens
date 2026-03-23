@@ -1,6 +1,8 @@
 package app.dao;
 import app.entities.Message;
+import app.entities.Role;
 import app.entities.User;
+import app.exceptions.ValidationException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.NoResultException;
@@ -13,7 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 
-public class UserDAO implements IDAO<User> {
+public class UserDAO implements IDAO<User>,ISecurityDAO {
     private final EntityManagerFactory emf;
 
     public UserDAO(EntityManagerFactory emf) {
@@ -97,4 +99,85 @@ public class UserDAO implements IDAO<User> {
             return null;
         }
     }
+
+
+//hashing
+
+    @Override
+    public User getVerifiedUser(String username, String password) throws ValidationException {
+        try (EntityManager em = emf.createEntityManager()) {
+            TypedQuery<User> query = em.createQuery(
+                    "SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.email = :email", User.class);
+            query.setParameter("email", username);
+            User user;
+            try {
+                user = query.getSingleResult();
+            } catch (NoResultException e) {
+                throw new ValidationException("User not found");
+            }
+            if (user.verifyPassword(password)) {
+                return user;
+            } else {
+                throw new ValidationException("User could not be validated");
+            }
+        }
+    }
+
+    @Override
+    public User createUser(String username, String password) {
+        try (EntityManager em = emf.createEntityManager()) {
+            User user = new User(username, password);
+            em.getTransaction().begin();
+            Role userRole = em.find(Role.class, "USER");
+            if (userRole == null) {
+                userRole = new Role("USER");
+                em.persist(userRole);
+            }
+            user.addRole(userRole);
+            em.persist(user);
+            em.getTransaction().commit();
+            return user;
+        }
+    }
+
+    @Override
+    public Role createRole(String roleName) {
+        try (EntityManager em = emf.createEntityManager()) {
+            em.getTransaction().begin();
+            Role role = em.find(Role.class, roleName);
+            if (role == null) {
+                role = new Role(roleName);
+                em.persist(role);
+            }
+            em.getTransaction().commit();
+            return role;
+        }
+    }
+
+    @Override
+    public User addUserRole(String email, String roleName) {
+        try (EntityManager em = emf.createEntityManager()) {
+            TypedQuery<User> query = em.createQuery(
+                    "SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.email = :email", User.class);
+            query.setParameter("email", email);
+            User user;
+            try {
+                user = query.getSingleResult();
+            } catch (NoResultException e) {
+                return null;
+            }
+            em.getTransaction().begin();
+            Role role = em.find(Role.class, roleName);
+            if (role == null) {
+                role = new Role(roleName);
+                em.persist(role);
+            }
+            user.addRole(role);
+            em.merge(user);
+            em.getTransaction().commit();
+            return user;
+        }
+    }
+
+
 }

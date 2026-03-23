@@ -1,15 +1,19 @@
-@baseUrl = {{url}}/message
+@baseUrl = {{url}}/api/message
 
 ### GET all messages
 GET {{baseUrl}}/all
 Accept: application/json
+Authorization: Bearer {{authToken}}
 
 ### GET message by ID
 GET {{baseUrl}}/1
 Accept: application/json
+Authorization: Bearer {{authToken}}
+
 ### POST create message
 POST {{baseUrl}}/
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "userId": 3,
@@ -21,6 +25,7 @@ Content-Type: application/json
 ### PUT update message
 PUT {{baseUrl}}/1
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "userId": 3,
@@ -31,3 +36,4 @@ Content-Type: application/json
 
 ### DELETE message
 DELETE {{baseUrl}}/23
+Authorization: Bearer {{authToken}}

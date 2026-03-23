@@ -1,9 +1,9 @@
 package app;
 
+import app.config.ApplicationConfig;
 import app.config.HibernateConfig;
-import app.services.apiServices.routes.Routes;
+import app.services.routeSecurity.routes.Routes;
 import app.utils.Populate;
-import io.javalin.Javalin;
 import jakarta.persistence.EntityManagerFactory;
 
 public class App {
@@ -22,16 +22,25 @@ public class App {
         Routes routes = new Routes();
         initiate();
 
-        Javalin app = Javalin.create(
-                config ->{
-                    config.routes.apiBuilder(
-                            routes.getRoutes());
-                    config.bundledPlugins.enableRouteOverview("/routes");
-                    config.routes.exception(RuntimeException.class,
-                            (e, ctx) ->
-                                    ctx.status(400).json(e.getMessage()));
+//        Javalin app = Javalin.create(
+//                config ->{
+//                    config.routes.apiBuilder(
+//                            routes.getRoutes());
+//                    config.bundledPlugins.enableRouteOverview("/routes");
+//                    config.routes.exception(RuntimeException.class,
+//                            (e, ctx) ->
+//                                    ctx.status(400).json(e.getMessage()));
+//
+//                })
+//                .start(7030);
 
-                })
+        new ApplicationConfig()
+                .security()
+                .route(routes.getRouteResource("auth"))
+                .route(routes.getRoutes())
+                .cors()
+                .exceptions()
+                .apiExceptions()
                 .start(7030);
     }
 }

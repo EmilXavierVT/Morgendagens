@@ -68,16 +68,12 @@ class ServiceCrudIntegrationTest {
         tenantService.create(tenant);
         assertNotNull(tenant.getId());
 
-        User user = User.builder()
-                .email("test@example.com")
-                .password("pw")
-                .role(1)
-                .firstName("emil")
-                .lastName("johnson")
-                .phoneNumber("272727272")
-                .zipCode(2920)
-                .tenant(tenant)
-                .build();
+        User user = new User("a@b.com", "pw");
+        user.setFirstName("first");
+        user.setLastName("last");
+        user.setPhoneNumber("123");
+        user.setZipCode(9999);
+        user.setTenant(tenant);
         userService.create(user);
         assertNotNull(user.getId());
 
@@ -129,16 +125,22 @@ class ServiceCrudIntegrationTest {
         tenantService.update(tenant);
         assertEquals("tenant-updated", tenantService.getById(tenant.getId()).getName());
 
-        user.setFirstName("updated");
-        userService.update(user);
+        // Re-fetch user before update so its messages list is populated —
+        // otherwise orphanRemoval would delete the message row.
+        User freshUser = userService.getById(user.getId());
+        freshUser.setFirstName("updated");
+        userService.update(freshUser);
         assertEquals("updated", userService.getById(user.getId()).getFirstName());
 
         product.setPrice(99.0);
         productService.update(product);
         assertEquals(99.0, productService.getById(product.getId()).getPrice());
 
-        request.setStatus(2);
-        requestService.update(request);
+        // Re-fetch request before update so its productsInRequest list is populated —
+        // otherwise CascadeType.ALL + orphanRemoval would delete the productInRequest row.
+        Request freshRequest = requestService.getById(request.getId());
+        freshRequest.setStatus(2);
+        requestService.update(freshRequest);
         assertEquals(2, requestService.getById(request.getId()).getStatus());
 
         productInRequest.setTime(Time.valueOf(LocalTime.of(12, 30)));

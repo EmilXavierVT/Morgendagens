@@ -1,15 +1,19 @@
-@baseUrl = {{url}}/product-in-requests
+@baseUrl = {{url}}/api/product-in-requests
 
 ### GET all product-in-requests
 GET {{baseUrl}}/all
 Accept: application/json
+Authorization: Bearer {{authToken}}
 
 ### GET product-in-request by ID
 GET {{baseUrl}}/1
 Accept: application/json
+Authorization: Bearer {{authToken}}
+
 ### POST create product-in-request
 POST {{baseUrl}}/
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "requestId": 1,
@@ -20,6 +24,7 @@ Content-Type: application/json
 ### PUT update product-in-request
 PUT {{baseUrl}}/1
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "requestId": 1,
@@ -29,3 +34,4 @@ Content-Type: application/json
 
 ### DELETE product-in-request
 DELETE {{baseUrl}}/1
+Authorization: Bearer {{authToken}}

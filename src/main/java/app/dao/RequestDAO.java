@@ -36,7 +36,13 @@ public class RequestDAO implements IDAO<Request> {
     @Override
     public Request getById(Long id) {
         try(EntityManager em = emf.createEntityManager()) {
-            return em.find(Request.class, id);
+            return em.createQuery(
+                    "SELECT r FROM Request r LEFT JOIN FETCH r.productsInRequest WHERE r.id = :id",
+                    Request.class)
+                    .setParameter("id", id)
+                    .getSingleResult();
+        } catch (jakarta.persistence.NoResultException e) {
+            return null;
         }
     }
 

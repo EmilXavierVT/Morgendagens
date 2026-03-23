@@ -1,4 +1,4 @@
-package app.services.apiServices.routes;
+package app.services.routeSecurity.routes;
 
 import app.dto.MessageDTO;
 import app.entities.Message;

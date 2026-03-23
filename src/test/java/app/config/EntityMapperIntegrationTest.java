@@ -2,7 +2,7 @@ package app.config;
 
 import app.dto.*;
 import app.entities.*;
-import app.services.apiServices.ObjectMapperService;
+import app.services.routeSecurity.ObjectMapperService;
 import app.services.dtoConverter.*;
 import app.services.entityServices.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -86,16 +86,12 @@ class EntityMapperIntegrationTest {
         Tenant tenant = Tenant.builder().name("t1").type("x").status(1).build();
         tenantService.create(tenant);
 
-        User user = User.builder()
-                .email("a@b.com")
-                .password("pw")
-                .role(2)
-                .firstName("first")
-                .lastName("last")
-                .phoneNumber("123")
-                .zipCode(9999)
-                .tenant(tenant)
-                .build();
+        User user = new User("a@b.com", "pw");
+        user.setFirstName("first");
+        user.setLastName("last");
+        user.setPhoneNumber("123");
+        user.setZipCode(9999);
+        user.setTenant(tenant);
         userService.create(user);
 
         // dto -> entity -> dto conversion

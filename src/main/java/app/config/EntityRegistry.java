@@ -14,5 +14,6 @@ final class EntityRegistry {
         configuration.addAnnotatedClass(Request.class);
         configuration.addAnnotatedClass(ProductInRequest.class);
         configuration.addAnnotatedClass(Message.class);
+        configuration.addAnnotatedClass(Role.class);
     }
 }

@@ -1,15 +1,19 @@
-@baseUrl ={{url}}/request
+@baseUrl = {{url}}/api/request
 
 ### GET all requests
 GET {{baseUrl}}/all
 Accept: application/json
+Authorization: Bearer {{authToken}}
 
 ### GET request by ID
 GET {{baseUrl}}/1
 Accept: application/json
+Authorization: Bearer {{authToken}}
+
 ### POST create request
 POST {{baseUrl}}/
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "tenantId": 1,
@@ -24,6 +28,7 @@ Content-Type: application/json
 ### PUT update request
 PUT {{baseUrl}}/1
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "tenantId": 1,
@@ -37,3 +42,4 @@ Content-Type: application/json
 
 ### DELETE request
 DELETE {{baseUrl}}/1
+Authorization: Bearer {{authToken}}

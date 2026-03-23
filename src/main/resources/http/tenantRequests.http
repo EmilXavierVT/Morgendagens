@@ -1,16 +1,19 @@
-@baseUrl = {{url}}/tenant
+@baseUrl = {{url}}/api/tenant
 
 ### GET all tenants
 GET {{baseUrl}}/all
 Accept: application/json
+Authorization: Bearer {{authToken}}
 
 ### GET tenant by ID
 GET {{baseUrl}}/1
 Accept: application/json
+Authorization: Bearer {{authToken}}
 
 ### POST create tenant
 POST {{baseUrl}}/
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "name": "Tenant HTTP Sample",
@@ -23,6 +26,7 @@ Content-Type: application/json
 ### PUT update tenant
 PUT {{baseUrl}}/1
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "name": "Tenant HTTP Sample Updated",
@@ -34,3 +38,4 @@ Content-Type: application/json
 
 ### DELETE tenant
 DELETE {{baseUrl}}/1
+Authorization: Bearer {{authToken}}

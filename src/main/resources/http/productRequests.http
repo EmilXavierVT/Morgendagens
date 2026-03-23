@@ -1,16 +1,19 @@
-@baseUrl = {{url}}/product
+@baseUrl = {{url}}/api/product
 
 ### GET all products
 GET {{baseUrl}}/all
 Accept: application/json
-
+Authorization: Bearer {{authToken}}
 
 ### GET product by ID
 GET {{baseUrl}}/1
 Accept: application/json
+Authorization: Bearer {{authToken}}
+
 ### POST create product
 POST {{baseUrl}}/
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "name": "HTTP Product",
@@ -23,6 +26,7 @@ Content-Type: application/json
 ### PUT update product
 PUT {{baseUrl}}/1
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "name": "HTTP Product Updated",
@@ -34,3 +38,4 @@ Content-Type: application/json
 
 ### DELETE product
 DELETE {{baseUrl}}/1
+Authorization: Bearer {{authToken}}

@@ -1,20 +1,34 @@
-@baseUrl = {{url}}/user
+@baseUrl = {{url}}/api/user
+#@authToken =eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJtb3JnZW5kYWdlbnMiLCJzdWIiOiJlbWlseGF2aWVydGhvcnNlbkBnbWFpbC5jb20iLCJleHAiOjE3NzQyNzQ2NDAsImVtYWlsIjoiZW1pbHhhdmllcnRob3JzZW5AZ21haWwuY29tIiwicm9sZXMiOiJBRE1JTiJ9.q1ZFCcigw7FZGZ5Yz-J04vBHjMqQZ52JSvK0GoEFROw
+
+### POST login (run this first - captures token for all other requests)
+POST {{url}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "emilxavierthorsen@gmail.com",
+  "password": "1234"
+}
+
+> {% client.global.set("authToken", response.body.token); %}
 
 ### GET all users
 GET {{baseUrl}}/all
 Accept: application/json
+Authorization: Bearer {{authToken}}
 
 ### GET user by ID
 GET {{baseUrl}}/1
 Accept: application/json
+Authorization: Bearer {{authToken}}
 
 ### POST create user
 POST {{baseUrl}}/
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "tenantId": 1,
-  "role": 2,
   "firstName": "Daniel",
   "lastName": "User",
   "zipCode": 12345,
@@ -27,10 +41,10 @@ Content-Type: application/json
 ### PUT update user
 PUT {{baseUrl}}/1
 Content-Type: application/json
+Authorization: Bearer {{authToken}}
 
 {
   "tenantId": 1,
-  "role": 3,
   "firstName": "HTTP",
   "lastName": "User Updated",
   "zipCode": 54321,
@@ -42,3 +56,4 @@ Content-Type: application/json
 
 ### DELETE user
 DELETE {{baseUrl}}/1
+Authorization: Bearer {{authToken}}

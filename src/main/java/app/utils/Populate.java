@@ -3,7 +3,6 @@ package app.utils;
 import app.dao.*;
 import app.entities.*;
 import app.entities.IEntity;
-import app.services.apiServices.WeatherService;
 import jakarta.persistence.EntityManagerFactory;
 
 import java.util.ArrayList;
@@ -31,15 +30,13 @@ public class Populate {
 
         Tenant tenant = new Tenant().builder().name("test").type("default").status(1).build();
 
-        User user = new User().builder()
-                .email("<EMAIL>")
-                .password("<PASSWORD>")
-                .role(1).firstName("emil")
-                .lastName("johnson")
-                .phoneNumber("272727272")
-                .zipCode(2920)
-                .tenant(tenant)
-                .build();
+        User user = new User("emilxavierthorsen@gmail.com", "1234");
+        user.setFirstName("emil");
+        user.setLastName("johnson");
+        user.setPhoneNumber("272727272");
+        user.setZipCode(2920);
+        user.setTenant(tenant);
+        user.addRole(new Role("ADMIN"));
         tenant.getUsers().add(user);
 
         Product productA = new Product().builder()

@@ -1,4 +1,4 @@
-package app.services.apiServices.routes;
+package app.services.routeSecurity.routes;
 
 import app.dto.TenantDTO;
 import app.entities.Tenant;
