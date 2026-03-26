@@ -14,6 +14,8 @@ import io.javalin.json.JavalinJackson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import jakarta.persistence.EntityManagerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -25,7 +27,7 @@ public class ApplicationConfig {
 
     private final ObjectMapper jsonMapper = new ObjectMapper();
     private final Logger logger = LoggerFactory.getLogger(ApplicationConfig.class);
-    private final ISecurityController securityController = new SecurityController();
+    private final ISecurityController securityController;
 
     private final List<EndpointGroup> routes = new ArrayList<>();
     private final List<Consumer<JavalinConfig>> configSteps = new ArrayList<>();
@@ -33,6 +35,12 @@ public class ApplicationConfig {
     private Javalin app;
 
     public ApplicationConfig() {
+        this.securityController = new SecurityController();
+        configSteps.add(this::applyBaseConfig);
+    }
+
+    public ApplicationConfig(EntityManagerFactory emf) {
+        this.securityController = new SecurityController(emf);
         configSteps.add(this::applyBaseConfig);
     }
 

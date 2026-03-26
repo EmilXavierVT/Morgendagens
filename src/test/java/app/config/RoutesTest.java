@@ -55,7 +55,7 @@ class RoutesTest {
         tenantService = new TenantService(emf);
 
         Routes routes = new Routes(emf);
-        app = new ApplicationConfig()
+        app = new ApplicationConfig(emf)
                 .security()
                 .route(routes.getRouteResource("auth"))
                 .route(routes.getRoutes())
