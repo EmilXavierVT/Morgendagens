@@ -15,15 +15,17 @@ import static io.javalin.apibuilder.ApiBuilder.*;
 public class Routes {
     private final EntityManagerFactory emf;
     ObjectMapper objectMapper = new ObjectMapper();
-    private final ISecurityController securityController = new SecurityController();
+    private final ISecurityController securityController;
 
     public Routes() {
         this(HibernateConfig.getEntityManagerFactory());
     }
 
+
     public Routes(EntityManagerFactory emf) {
         if (emf == null) throw new IllegalArgumentException("EntityManagerFactory cannot be null");
         this.emf = emf;
+        this.securityController = new SecurityController(emf);
     }
 
     public EndpointGroup getRoutes() {

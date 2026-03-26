@@ -8,6 +8,7 @@ import app.dto.UserDTO;
 import app.exceptions.ApiException;
 import app.exceptions.ValidationException;
 import app.config.HibernateConfig;
+import jakarta.persistence.EntityManagerFactory;
 import app.dao.ISecurityDAO;
 import app.dao.UserDAO;
 import app.entities.User;
@@ -22,7 +23,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class SecurityController implements ISecurityController{
-    private ISecurityDAO userDAO = new UserDAO(HibernateConfig.getEntityManagerFactory());
+    private ISecurityDAO userDAO;
+
+    public SecurityController() {
+        this.userDAO = new UserDAO(HibernateConfig.getEntityManagerFactory());
+    }
+
+    public SecurityController(EntityManagerFactory emf) {
+        this.userDAO = new UserDAO(emf);
+    }
     private final ObjectMapper objectMapper = new ObjectMapper();
     private ITokenSecurity tokenSecurity = new TokenSecurity();
 
