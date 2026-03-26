@@ -20,7 +20,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 class RoutesTest {
-    private static final String ADMIN_EMAIL = "emilxavierthorsenögmail.com";
+    private static final String ADMIN_EMAIL = "emilxavierthorsen@gmail.com";
     private static final String ADMIN_PASSWORD = "1234";
     private static final String USER_EMAIL = "user.routes.test@example.com";
     private static final String USER_PASSWORD = "user123";
