@@ -60,6 +60,15 @@ public class RequestRoutes {
 
     }
 
+    public void getByUserId(Context ctx) {
+        Long userId = ctx.pathParamAsClass("userId", Long.class).get();
+        List<RequestDTO> dtos = new ArrayList<>();
+        for (Request request : requestService.getByUserId(userId)) {
+            dtos.add(requestMapper.toDto(request));
+        }
+        ctx.json(dtos);
+    }
+
     public void delete(Context ctx) {
         Long id = ctx.pathParamAsClass("id", Long.class).get();
         Request deleted = requestService.delete(id);

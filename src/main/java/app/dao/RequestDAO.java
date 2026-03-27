@@ -81,6 +81,16 @@ public class RequestDAO implements IDAO<Request> {
         }
     }
 
+    public List<Request> getByUserId(Long userId) {
+        try (EntityManager em = emf.createEntityManager()) {
+            return em.createQuery(
+                    "SELECT r FROM Request r LEFT JOIN FETCH r.productsInRequest WHERE r.tenant.id = (SELECT u.tenant.id FROM User u WHERE u.id = :userId)",
+                    Request.class)
+                    .setParameter("userId", userId)
+                    .getResultList();
+        }
+    }
+
     private void attachTenant(EntityManager em, Request request) {
         Tenant tenant = request.getTenant();
         if (tenant != null && tenant.getId() != null) {

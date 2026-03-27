@@ -74,6 +74,7 @@ public class Routes {
             path("/request", () -> {
                 get("/all", requestRoutes::getAll, Role.USER, Role.ADMIN);
                 post("/", requestRoutes::create, Role.USER, Role.ADMIN);
+                get("/user/{userId}", requestRoutes::getByUserId, Role.USER, Role.ADMIN);
                 get("/{id}", requestRoutes::getById, Role.USER, Role.ADMIN);
                 put("/{id}", requestRoutes::update, Role.USER, Role.ADMIN);
                 delete("/{id}", requestRoutes::delete, Role.ADMIN);

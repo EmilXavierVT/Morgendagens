@@ -4,6 +4,7 @@ import app.dao.RequestDAO;
 import app.entities.Request;
 import jakarta.persistence.EntityManagerFactory;
 
+import java.util.List;
 import java.util.Set;
 
 public class RequestService implements CrudService<Request> {
@@ -32,5 +33,9 @@ public class RequestService implements CrudService<Request> {
 
     public Set<Request> getAll() {
         return requestDAO.getAll();
+    }
+
+    public List<Request> getByUserId(Long userId) {
+        return requestDAO.getByUserId(userId);
     }
 }

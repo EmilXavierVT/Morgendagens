@@ -20,8 +20,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.util.Properties;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 
 @Testcontainers
 class RoutesTest {
@@ -291,6 +290,36 @@ class RoutesTest {
                 .when().get("/request/{id}", requestId)
                 .then()
                 .statusCode(404);
+    }
+
+    @Test
+    void get_requests_by_user_id_returns_requests_for_users_tenant() {
+        long tenantId = createTenantId("tenant-request-by-user");
+        long userId = createUserId(tenantId, "Test", "User", "request.byuser." + System.nanoTime() + "@example.com");
+        createRequestId(tenantId, 1, 2);
+        createRequestId(tenantId, 2, 3);
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().get("/request/user/{userId}", userId)
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(2))
+                .body("[0].tenantId", equalTo((int) tenantId))
+                .body("[1].tenantId", equalTo((int) tenantId));
+    }
+
+    @Test
+    void get_requests_by_user_id_returns_empty_when_no_requests_exist() {
+        long tenantId = createTenantId("tenant-no-requests");
+        long userId = createUserId(tenantId, "Empty", "User", "no.requests." + System.nanoTime() + "@example.com");
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().get("/request/user/{userId}", userId)
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(0));
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────────
