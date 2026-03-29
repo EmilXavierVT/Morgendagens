@@ -55,7 +55,8 @@ public class SecurityController implements ISecurityController{
             ctx.status(200).json(node
                     .put("token", token)
                     .put("username", userEntity.getEmail())
-                    .put("accpted","indeed"));
+                    .put("accpted","indeed")
+                    .put("id",userEntity.getId()));
 
 
         }catch (ValidationException e){
