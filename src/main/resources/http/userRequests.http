@@ -1,6 +1,17 @@
 @baseUrl = {{url}}/api/user
 #@authToken =eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJtb3JnZW5kYWdlbnMiLCJzdWIiOiJlbWlseGF2aWVydGhvcnNlbkBnbWFpbC5jb20iLCJleHAiOjE3NzQyNzQ2NDAsImVtYWlsIjoiZW1pbHhhdmllcnRob3JzZW5AZ21haWwuY29tIiwicm9sZXMiOiJBRE1JTiJ9.q1ZFCcigw7FZGZ5Yz-J04vBHjMqQZ52JSvK0GoEFROw
 
+### POST register
+POST {{url}}/api/auth/register
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+
+{
+  "email": "newuser@example.com",
+  "password": "1234"
+}
+
 ### POST login (run this first - captures token for all other requests)
 POST {{url}}/api/auth/login
 Content-Type: application/json

@@ -41,7 +41,7 @@ public class SecurityController implements ISecurityController{
         UserDTO user = ctx.bodyAsClass(UserDTO.class);
         userDAO.createUser(user.getEmail(), user.getPassword());
         ObjectNode node = objectMapper.createObjectNode();
-        node.put("msg", "loginregist er success");
+        node.put("msg", "register success");
         ctx.json(node).status(201);
     }
     @Override

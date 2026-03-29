@@ -43,3 +43,8 @@ Authorization: Bearer {{authToken}}
 ### DELETE request
 DELETE {{baseUrl}}/1
 Authorization: Bearer {{authToken}}
+
+### GET requests by user ID
+GET {{baseUrl}}/user/1
+Accept: application/json
+Authorization: Bearer {{authToken}}

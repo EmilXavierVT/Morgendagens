@@ -1,6 +1,7 @@
 package app.dao;
 import app.entities.Message;
 import app.entities.Role;
+import app.entities.Tenant;
 import app.entities.User;
 import app.exceptions.ValidationException;
 import jakarta.persistence.EntityManager;
@@ -126,8 +127,18 @@ public class UserDAO implements IDAO<User>,ISecurityDAO {
     @Override
     public User createUser(String username, String password) {
         try (EntityManager em = emf.createEntityManager()) {
-            User user = new User(username, password);
             em.getTransaction().begin();
+
+            Tenant tenant = Tenant.builder()
+                    .name(username)
+                    .type("custom")
+                    .status(1)
+                    .build();
+            em.persist(tenant);
+
+            User user = new User(username, password);
+            user.setTenant(tenant);
+
             Role userRole = em.find(Role.class, "USER");
             if (userRole == null) {
                 userRole = new Role("USER");
@@ -135,6 +146,7 @@ public class UserDAO implements IDAO<User>,ISecurityDAO {
             }
             user.addRole(userRole);
             em.persist(user);
+
             em.getTransaction().commit();
             return user;
         }
