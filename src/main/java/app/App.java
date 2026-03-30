@@ -20,7 +20,7 @@ public class App {
     public void javalinService(){
 
         Routes routes = new Routes();
-        initiate();
+//        initiate();
 
 //        Javalin app = Javalin.create(
 //                config ->{

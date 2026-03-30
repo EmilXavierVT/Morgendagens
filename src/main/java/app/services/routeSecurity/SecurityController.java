@@ -39,9 +39,11 @@ public class SecurityController implements ISecurityController{
     @Override
     public void register(Context ctx) {
         UserDTO user = ctx.bodyAsClass(UserDTO.class);
-        userDAO.createUser(user.getEmail(), user.getPassword());
+            User entity = userDAO.createUser(user.getEmail(), user.getPassword());
         ObjectNode node = objectMapper.createObjectNode();
-        node.put("msg", "register success");
+        node.put("msg", "register success")
+                .put("tenantID", entity.getTenant().getId())
+                .put("id",entity.getId());
         ctx.json(node).status(201);
     }
     @Override
