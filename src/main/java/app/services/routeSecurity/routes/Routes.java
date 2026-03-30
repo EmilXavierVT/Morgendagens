@@ -67,7 +67,7 @@ public class Routes {
                 get("/all", productInRequestRoutes::getAll, Role.USER, Role.ADMIN);
                 post("/", productInRequestRoutes::create, Role.ADMIN);
                 get("/{id}", productInRequestRoutes::getById, Role.USER, Role.ADMIN);
-                put("/{id}", productInRequestRoutes::update, Role.ADMIN);
+                put("/{id}", productInRequestRoutes::update, Role.ADMIN, Role.USER);
                 delete("/{id}", productInRequestRoutes::delete, Role.ADMIN);
             });
 
