@@ -30,6 +30,7 @@ public class RequestMapper {
         dto.setLocation(request.getLocation());
         dto.setStatus(request.getStatus());
         dto.setType(request.getType());
+        dto.setAllergies(request.getAllergies());
         dto.setWeatherDTO(request.getWeatherDTO());
 
         Tenant tenant = request.getTenant();
@@ -56,6 +57,7 @@ public class RequestMapper {
         request.setLocation(dto.getLocation());
         request.setStatus(dto.getStatus());
         request.setType(dto.getType());
+        request.setAllergies(dto.getAllergies());
         request.setWeatherDTO(dto.getWeatherDTO());
 
         if (dto.getTenantId() != null) {

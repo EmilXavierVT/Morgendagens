@@ -21,6 +21,7 @@ public class RequestDTO {
     private String location;
     private int status;
     private int type;
+    private String allergies;
     private List<Long> productInRequestIds;
     private WeatherDTO weatherDTO;
 }

@@ -29,6 +29,7 @@ public class Request implements IEntity {
     private String location;
     private int status;
     private int type;
+    private String allergies;
     @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @Builder.Default
