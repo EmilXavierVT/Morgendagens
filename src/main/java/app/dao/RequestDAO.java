@@ -77,7 +77,7 @@ public class RequestDAO implements IDAO<Request> {
     @Override
     public Set<Request> getAll() {
         try (EntityManager em = emf.createEntityManager()) {
-            return new HashSet<>(em.createQuery("SELECT r FROM Request r", Request.class).getResultList());
+            return new HashSet<>(em.createQuery("SELECT DISTINCT r FROM Request r LEFT JOIN FETCH r.productsInRequest", Request.class).getResultList());
         }
     }
 
