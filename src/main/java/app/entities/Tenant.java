@@ -32,4 +32,8 @@ public class Tenant implements IEntity {
     @Builder.Default
     private Set<Request> requests = new HashSet<>();
 
+    public void addUser(User user) {
+        users.add(user);
+    }
+
 }

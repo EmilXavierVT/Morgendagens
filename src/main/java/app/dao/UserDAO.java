@@ -137,7 +137,10 @@ public class UserDAO implements IDAO<User>,ISecurityDAO {
             em.persist(tenant);
 
             User user = new User(username, password);
+
             user.setTenant(tenant);
+
+
 
             Role userRole = em.find(Role.class, "USER");
             if (userRole == null) {
@@ -146,6 +149,10 @@ public class UserDAO implements IDAO<User>,ISecurityDAO {
             }
             user.addRole(userRole);
             em.persist(user);
+//          added these lines
+
+            tenant.addUser(user);
+            em.merge(tenant);
 
             em.getTransaction().commit();
             return user;
