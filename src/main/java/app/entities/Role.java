@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
@@ -21,4 +22,9 @@ public class Role {
         this.roleName = roleName;
     }
 
+
+    @Override
+    public String toString(){
+       return roleName;
+    }
 }

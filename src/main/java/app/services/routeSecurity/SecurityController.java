@@ -54,13 +54,14 @@ public class SecurityController implements ISecurityController{
             String token = createToken(new UserDTO(userEntity.getEmail(),userEntity.getRolesAsStrings()));
             ObjectNode node =objectMapper.createObjectNode();
 
+            String roles = String.join(",", userEntity.getRolesAsStrings());
 
             ctx.status(200).json(node
                     .put("token", token)
                     .put("username", userEntity.getEmail())
                     .put("accpted","indeed")
                     .put("id",userEntity.getId())
-                    .put("role", userEntity.getRoles().toString()));
+                    .put("role", roles));
 
 
 
