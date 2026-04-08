@@ -25,6 +25,7 @@ A multi-tenant request management platform built with Java and Javalin. Morgenda
 - [Authentication & Security](#authentication--security)
 - [Database Schema](#database-schema)
 - [Testing](#testing)
+- [User Stories](#user-stories)
 
 ---
 
@@ -345,6 +346,10 @@ user_roles      → M2M junction: users ↔ roles
 
 Hibernate manages schema creation and updates automatically (`hbm2ddl.auto=update` in development).
 
+## ENTITY RELATIONAL DIAGRAM
+
+![ERD](src/main/resources/public/images/ERD.png)
+
 ---
 
 ## Testing
@@ -362,3 +367,104 @@ Test coverage includes:
 - Tenant isolation
 
 Tests use **REST Assured** for HTTP-level assertions against a live Javalin server wired to the TestContainers database.
+
+---
+
+## User Stories
+
+### 1. Requests (Catering & Cleaning)
+
+- As a customer I want to be able to select **"catering"** or **"cleaning"** as the request type, so the correct fields and products are shown.
+- A request must as a minimum contain: date, time, product name, address, contact information, and number of guests/persons (depending on type).
+- The system must validate date/time (no requests in the past) and display clear error messages.
+- As a customer I want to be able to add **comments, allergens, and special wishes** to a request.
+- As a customer I want to be able to **upload files** (e.g. floor plan, allergen list, photos of location) to a request.
+- The system must assign a request a **status flow**: New → In Progress → Offer Sent → Accepted → Rejected → Order → Completed / Cancelled.
+- As an admin I want to be able to **assign a request to an employee** (responsible person) so tasks are distributed.
+
+---
+
+### 2. Products, Packages & Pricing Logic
+
+- As an admin I want to be able to set **minimum quantities, delivery surcharges, weekend surcharges, and discount codes**.
+- The system must save price lines as a **"snapshot"** so that an old order does not change price if product prices are updated later.
+- As an admin I want to be able to mark products as **"seasonal / out of stock"** so they cannot be selected.
+
+---
+
+### 3. Offers, Acceptance & Conversion to Order
+
+- As a customer I want to be able to **receive an offer by email** and accept or reject it via a link (optionally with an expiry date on the offer).
+- The system must **log all offers and rejections** (who, when, comment).
+- As an admin I want to be able to **send an offer with a PDF** (item list, price, terms) and see the "offer sent" timestamp.
+- When a request becomes an order: the system must **lock relevant fields** (or create an "order copy") to maintain a reliable history.
+
+---
+
+### 4. Customer Portal (My Orders)
+
+- As a customer I want to be able to **log in and view status, price, details, and history** of my requests and orders.
+- As a customer I want to be able to **download invoice / offer / order confirmation as PDF**.
+- As a customer I want to be able to **send messages to admin on an order** (message thread) so all dialogue is gathered in one place.
+
+---
+
+### 5. Admin Overview, Tables & Pop View
+
+- As an admin I want to be able to **filter and sort tables** (date, type, status, customer, responsible person).
+- As an admin I want to be able to **search across customers, requests, and orders** (name, phone, email, order number).
+- The pop view must show: contact info, address, schedule, products, notes, allergens, status, history, and mail log.
+- As an admin I want to be able to **export data to CSV/Excel** (orders in a period, top customers).
+
+---
+
+### 6. Calendar & Planning
+
+- The admin calendar must support **day / week / month views** with colour codes for catering / cleaning / status.
+- As an admin I want to be able to **see conflicts** (time overlaps, capacity limits, delivery zones).
+- As an admin I want to be able to **drag an order to a new time slot** in the calendar (drag & drop) or delete it with an automatic customer email about the change.
+- The system must be able to **sync to an external calendar** (Google / Outlook) or at minimum generate an iCal invite.
+
+---
+
+### 7. Notifications & Mail Flow
+
+The system must send:
+- **Confirmation on request** (to customer)
+- **"New request" notification** (to admin)
+- **Offer / rejection** (to customer)
+- **Order confirmation** (to customer)
+- **Change notification on update** (to customer and admin)
+
+Additional requirements:
+- The system must save a **mail log per request/order** (sent, timestamp, content/template).
+- As an admin I want to be able to **configure mail templates** (text, logo, contact info, terms).
+
+---
+
+### 8. Business Customer Portal (Company Portal)
+
+- The company portal must **require login and only show that company's own requests/orders** (role-based access).
+- As a business customer I want to be able to **create, edit, and delete requests with live updates for admin** (and a log of changes).
+- As an admin I want to be able to **define what business customers are allowed to change** (e.g. time slot and quantity, but not prices).
+- As a business customer I want to be able to create **templates** (e.g. recurring Tuesday lunch) for quick request creation.
+- As a business customer I want to be able to **search and filter all orders** (period, status, location).
+- The system must have an **audit trail**: who changed what and when (critical when customers can edit).
+
+---
+
+### 9. Cleaning as a Separate Flow
+
+- Cleaning requests must be able to contain: **location, m² / room types, desired duration, frequency** (one-time / weekly), materials.
+- As an admin I want to be able to **assign cleaning tasks to specific teams** and view routes / zones.
+- The system must be able to **generate a checklist per cleaning order** (task types).
+
+---
+
+### 10. Non-Functional Requirements
+
+- The system must be **mobile-friendly** — the customer flow must work on phones.
+- The system must comply with **GDPR**: consent, data processing agreement, option for deletion / anonymisation, logging of consent.
+- The system must be **secure**: role-based access control (customer / business / admin), rate limiting on forms, 2FA for admin (nice-to-have).
+- The system must meet **performance requirements** (e.g. "admin table must load in <2 seconds with 5,000 orders").
+- The system must support **backup and restore**.

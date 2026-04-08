@@ -4,11 +4,11 @@
 ### POST register
 POST {{url}}/api/auth/register
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
+#Authorization: Bearer {{authToken}}
 
 
 {
-  "email": "newuser@example.com",
+  "email": "emilxavierthorsen@gmail.com",
   "password": "1234"
 }
 

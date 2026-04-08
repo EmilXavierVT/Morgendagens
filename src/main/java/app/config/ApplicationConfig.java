@@ -39,6 +39,7 @@ public class ApplicationConfig {
         configSteps.add(this::applyBaseConfig);
     }
 
+
     public ApplicationConfig(EntityManagerFactory emf) {
         this.securityController = new SecurityController(emf);
         configSteps.add(this::applyBaseConfig);
@@ -49,6 +50,12 @@ public class ApplicationConfig {
         return this;
     }
 
+    public ApplicationConfig routeOverview() {
+        configSteps.add(config ->
+                config.bundledPlugins.enableRouteOverview("/routes")
+        );
+        return this;
+    }
     public ApplicationConfig cors() {
         configSteps.add(config -> {
             config.bundledPlugins.enableCors(cors ->

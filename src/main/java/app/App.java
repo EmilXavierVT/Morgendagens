@@ -38,6 +38,7 @@ public class App {
                 .security()
                 .route(routes.getRouteResource("auth"))
                 .route(routes.getRoutes())
+                .routeOverview()
                 .cors()
                 .exceptions()
                 .apiExceptions()
