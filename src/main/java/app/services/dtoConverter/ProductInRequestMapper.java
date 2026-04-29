@@ -23,6 +23,7 @@ public class ProductInRequestMapper {
         ProductInRequestDTO dto = new ProductInRequestDTO();
         dto.setId(pir.getId());
         dto.setTime(pir.getTime());
+        dto.setAmount(pir.getAmount());
 
         Request req = pir.getRequest();
         dto.setRequestId(req != null ? req.getId() : null);
@@ -38,6 +39,7 @@ public class ProductInRequestMapper {
         ProductInRequest pir = new ProductInRequest();
         pir.setId(dto.getId());
         pir.setTime(dto.getTime());
+        pir.setAmount(dto.getAmount());
 
         if (dto.getRequestId() != null) {
             Request req = requestService.getById(dto.getRequestId());

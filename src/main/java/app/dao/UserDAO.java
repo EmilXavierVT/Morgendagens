@@ -43,6 +43,7 @@ public class UserDAO implements IDAO<User>,ISecurityDAO {
             }
             user.setMessages(managedMessages);
             em.persist(user);
+
             em.getTransaction().commit();
             return getByIdWithMessages(user.getId());
         }

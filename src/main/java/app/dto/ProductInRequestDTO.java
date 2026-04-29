@@ -16,4 +16,5 @@ public class ProductInRequestDTO {
     private Long requestId;
     private Long productId;
     private Time time;
+    private int amount;
 }

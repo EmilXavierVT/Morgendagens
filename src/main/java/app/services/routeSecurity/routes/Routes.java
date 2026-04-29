@@ -56,7 +56,7 @@ public class Routes {
             });
 
             path("/product", () -> {
-                get("/all", productRoutes::getAll, Role.USER, Role.ADMIN);
+                get("/all", productRoutes::getAll, Role.USER, Role.ADMIN, Role.ANYONE);
                 post("/", productRoutes::create, Role.ADMIN);
                 get("/{id}", productRoutes::getById, Role.USER, Role.ADMIN);
                 put("/{id}", productRoutes::update, Role.ADMIN);

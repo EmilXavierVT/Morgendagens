@@ -36,7 +36,6 @@ public class Request implements IEntity {
     private List<ProductInRequest> productsInRequest = new ArrayList<>();
 
     @Transient
-//    @ToString.Exclude
     private WeatherDTO weatherDTO;
 
 

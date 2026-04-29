@@ -22,7 +22,9 @@ public class ProductDAO implements IDAO<Product> {
         try (EntityManager em = emf.createEntityManager()) {
             em.getTransaction().begin();
             em.persist(product);
+            System.out.println(product);
             em.getTransaction().commit();
+            System.out.println(product);
             return getByIdWithProductInRequests(product.getId());
         }
     }

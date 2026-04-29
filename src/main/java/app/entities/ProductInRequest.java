@@ -29,5 +29,6 @@ public class ProductInRequest implements IEntity {
 
     private Time time;
 
+    private int amount;
 
 }
