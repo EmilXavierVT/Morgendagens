@@ -2,7 +2,6 @@ package app.services.routeSecurity.routes;
 
 import app.dto.UserDTO;
 import app.entities.User;
-import app.exceptions.ApiException;
 import app.services.dtoConverter.UserMapper;
 import app.services.entityServices.UserService;
 import io.javalin.http.Context;

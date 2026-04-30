@@ -35,6 +35,7 @@ public class Routes {
         ProductInRequestRoutes productInRequestRoutes = new ProductInRequestRoutes(emf);
         RequestRoutes requestRoutes = new RequestRoutes(emf);
         MessageRoutes messageRoutes = new MessageRoutes(emf);
+        EmailRoutes emailRoutes = new EmailRoutes();
 
         return () -> {
             get("/", ctx -> ctx.result("Hello Javalin World!"));
@@ -87,6 +88,10 @@ public class Routes {
                 get("/{id}", messageRoutes::getById, Role.USER, Role.ADMIN);
                 put("/{id}", messageRoutes::update, Role.USER, Role.ADMIN);
                 delete("/{id}", messageRoutes::delete, Role.ADMIN);
+            });
+
+            path("/email", () -> {
+                post("/send", emailRoutes::send, Role.USER, Role.ADMIN);
             });
         };
     }

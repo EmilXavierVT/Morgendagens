@@ -18,10 +18,22 @@ Content-Type: application/json
 
 {
   "email": "emilxavierthorsen@gmail.com",
-  "password": "1234"
+  "password": "changeme"
 }
 
 > {% client.global.set("authToken", response.body.token); %}
+
+###POST
+POST {{url}}/api/email/send
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "to": "emilxavierthorsen@gmail.com",
+  "subject": "Test",
+  "body": "It works",
+  "html": false
+}
 
 ### GET all users
 GET {{baseUrl}}/all
