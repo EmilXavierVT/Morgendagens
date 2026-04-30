@@ -1,0 +1,93 @@
+@startuml
+title PUT /request/{id} - Update Request
+autonumber
+
+actor Client
+participant "Javalin" as Javalin
+participant "SecurityController" as SecCtrl
+participant "TokenSecurity" as Token
+participant "RequestRoutes" as Routes
+participant "RequestMapper" as Mapper
+participant "TenantService" as TenantSvc
+participant "ProductInRequestService" as PirSvc
+participant "RequestService" as ReqSvc
+participant "RequestDAO" as ReqDAO
+participant "EntityManager / JPA" as JPA
+database "Database" as DB
+
+Client -> Javalin : PUT /api/request/{id}\nAuthorization: Bearer <token>\nBody: RequestDTO (JSON)
+
+== beforeMatched #1 — authenticate ==
+Javalin -> SecCtrl : authenticate(ctx)
+SecCtrl -> SecCtrl : route roles = {USER, ADMIN} — not open
+SecCtrl -> SecCtrl : getToken(ctx) — extract Bearer token
+SecCtrl -> Token : tokenIsValid(token, SECRET)
+Token --> SecCtrl : true / false
+SecCtrl -> Token : tokenNotExpired(token)
+Token --> SecCtrl : true / false
+SecCtrl -> Token : getUserWithRolesFromToken(token)
+Token --> SecCtrl : UserDTO (email + roles)
+SecCtrl -> Javalin : ctx.attribute("user", userDTO)
+
+== beforeMatched #2 — authorize ==
+Javalin -> SecCtrl : authorize(ctx)
+SecCtrl -> SecCtrl : allowedRoles = {USER, ADMIN}
+SecCtrl -> SecCtrl : userHasAllowedRole(userDTO, allowedRoles)
+alt user lacks required role
+  SecCtrl --> Client : 403 Forbidden
+end
+
+== Route handler ==
+Javalin -> Routes : update(ctx)
+Routes -> Routes : id = ctx.pathParamAsClass("id", Long).get()
+Routes -> Routes : dto = ctx.bodyValidator(RequestDTO).get()
+Routes -> Routes : dto.setId(id)
+
+Routes -> Mapper : fromDto(dto)
+Mapper -> TenantSvc : getById(dto.tenantId)
+TenantSvc -> JPA : em.find/query Tenant
+JPA -> DB : SELECT tenant WHERE id = tenantId
+DB --> JPA : tenant row
+JPA --> TenantSvc : Tenant
+TenantSvc --> Mapper : Tenant
+
+loop each productInRequestId in dto
+  Mapper -> PirSvc : getById(pirId)
+  PirSvc -> JPA : em.find(ProductInRequest, id)
+  JPA -> DB : SELECT product_in_request WHERE id = pirId
+  DB --> JPA : product_in_request row
+  JPA --> PirSvc : ProductInRequest
+  PirSvc --> Mapper : ProductInRequest
+  Mapper -> Mapper : pir.setRequest(request)
+end
+
+Mapper --> Routes : Request entity
+
+Routes -> ReqSvc : update(request)
+ReqSvc -> ReqDAO : update(request)
+ReqDAO -> JPA : begin transaction
+ReqDAO -> ReqDAO : attachTenant(em, request)
+JPA -> DB : em.find(Tenant, tenantId)
+DB --> JPA : managed Tenant
+ReqDAO -> ReqDAO : attachProductInRequests(em, request)
+loop each ProductInRequest
+  JPA -> DB : em.find(ProductInRequest, pirId)
+  DB --> JPA : managed ProductInRequest
+  JPA -> JPA : managedPir.setRequest(request)
+end
+ReqDAO -> JPA : em.merge(request)
+JPA -> DB : UPDATE requests SET ...
+DB --> JPA : updated row
+ReqDAO -> JPA : commit transaction
+ReqDAO --> ReqSvc : updated Request
+ReqSvc --> Routes : updated Request
+
+alt updated == null
+  Routes --> Client : 404 "Request not found"
+else
+  Routes -> Mapper : toDto(updated)
+  Mapper --> Routes : RequestDTO
+  Routes --> Client : 200 OK + RequestDTO (JSON)
+end
+
+@enduml

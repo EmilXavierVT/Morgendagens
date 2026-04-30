@@ -1,0 +1,11 @@
+### Send email
+POST {{url}}/email/send
+Authorization: Bearer {{jwt_token}}
+Content-Type: application/json
+
+{
+  "to": "recipient@example.com",
+  "subject": "Hello from Morgendagens",
+  "body": "This is a test email sent with Resend.",
+  "html": false
+}
