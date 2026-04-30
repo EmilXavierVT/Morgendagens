@@ -7,6 +7,7 @@ import app.exceptions.ValidationException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.NoResultException;
+import jakarta.persistence.PersistenceException;
 import jakarta.persistence.TypedQuery;
 
 
@@ -126,38 +127,66 @@ public class UserDAO implements IDAO<User>,ISecurityDAO {
     }
 
     @Override
-    public User createUser(String username, String password) {
+    public User createUser(String username, String password) throws ValidationException {
         try (EntityManager em = emf.createEntityManager()) {
-            em.getTransaction().begin();
-
-            Tenant tenant = Tenant.builder()
-                    .name(username)
-                    .type("custom")
-                    .status(1)
-                    .build();
-            em.persist(tenant);
-
-            User user = new User(username, password);
-
-            user.setTenant(tenant);
-
-
-
-            Role userRole = em.find(Role.class, "USER");
-            if (userRole == null) {
-                userRole = new Role("USER");
-                em.persist(userRole);
+            Long existingUsers = em.createQuery(
+                    "SELECT COUNT(u) FROM User u WHERE u.email = :email",
+                    Long.class
+            ).setParameter("email", username).getSingleResult();
+            if (existingUsers > 0) {
+                throw new ValidationException("User already exists");
             }
-            user.addRole(userRole);
-            em.persist(user);
+
+            try {
+                em.getTransaction().begin();
+
+                Tenant tenant = Tenant.builder()
+                        .name(username)
+                        .type("custom")
+                        .status(1)
+                        .build();
+                em.persist(tenant);
+
+                User user = new User(username, password);
+
+                user.setTenant(tenant);
+
+
+
+                Role userRole = em.find(Role.class, "USER");
+                if (userRole == null) {
+                    userRole = new Role("USER");
+                    em.persist(userRole);
+                }
+                user.addRole(userRole);
+                em.persist(user);
 //          added these lines
 
-            tenant.addUser(user);
-            em.merge(tenant);
+                tenant.addUser(user);
+                em.merge(tenant);
 
-            em.getTransaction().commit();
-            return user;
+                em.getTransaction().commit();
+                return user;
+            } catch (PersistenceException e) {
+                if (em.getTransaction().isActive()) {
+                    em.getTransaction().rollback();
+                }
+                if (isConstraintViolation(e)) {
+                    throw new ValidationException("User already exists");
+                }
+                throw e;
+            }
         }
+    }
+
+    private boolean isConstraintViolation(Throwable throwable) {
+        while (throwable != null) {
+            if ("ConstraintViolationException".equals(throwable.getClass().getSimpleName())) {
+                return true;
+            }
+            throwable = throwable.getCause();
+        }
+        return false;
     }
 
     @Override

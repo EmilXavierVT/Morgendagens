@@ -129,6 +129,18 @@ class RoutesTest {
     }
 
     @Test
+    void register_with_existing_email_returns_409() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"email\":\"" + USER_EMAIL + "\",\"password\":\"new-password\"}")
+                .when().post("/auth/register")
+                .then()
+                .statusCode(409)
+                .body("status", equalTo(409))
+                .body("msg", equalTo("User already exists"));
+    }
+
+    @Test
     void protected_endpoint_without_token_returns_401() {
         given()
                 .when().get("/tenant/all")
