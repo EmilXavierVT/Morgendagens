@@ -5,6 +5,7 @@ import app.entities.Message;
 import app.entities.Role;
 import app.entities.Tenant;
 import app.entities.User;
+import org.mindrot.jbcrypt.BCrypt;
 import app.services.entityServices.MessageService;
 import app.services.entityServices.TenantService;
 import jakarta.persistence.EntityManager;
@@ -62,7 +63,12 @@ public class UserMapper {
         user.setLastName(dto.getLastName());
         user.setZipCode(dto.getZipCode());
         user.setEmail(dto.getEmail());
-        user.setPassword(dto.getPassword());
+        String rawPassword = dto.getPassword();
+        if (rawPassword != null && !rawPassword.startsWith("$2")) {
+            user.setPassword(BCrypt.hashpw(rawPassword, BCrypt.gensalt(12)));
+        } else {
+            user.setPassword(rawPassword);
+        }
         user.setPhoneNumber(dto.getPhoneNumber());
 
         if (dto.getRoles() != null && !dto.getRoles().isEmpty()) {

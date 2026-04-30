@@ -53,6 +53,7 @@ public class Routes {
                 get("/{id}", userRoutes::getById, Role.USER, Role.ADMIN);
                 put("/{id}", userRoutes::update, Role.USER, Role.ADMIN);
                 delete("/{id}", userRoutes::delete, Role.ADMIN);
+                put("/{id}/admin", userRoutes::setAdmin, Role.ADMIN);
             });
 
             path("/product", () -> {

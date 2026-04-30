@@ -2,6 +2,7 @@ package app.services.entityServices;
 
 import app.dao.UserDAO;
 import app.entities.User;
+import app.exceptions.ApiException;
 import jakarta.persistence.EntityManagerFactory;
 
 import java.util.Set;
@@ -32,6 +33,12 @@ public class UserService implements CrudService<User> {
 
     public Set<User> getAll() {
         return userDAO.getAll();
+    }
+
+    public User setAdmin(Long id) {
+        User user = userDAO.getById(id);
+        if (user == null) throw new ApiException(404, "User not found");
+        return userDAO.addUserRole(user.getEmail(), "ADMIN");
     }
 
 }

@@ -2,6 +2,7 @@ package app.services.routeSecurity.routes;
 
 import app.dto.UserDTO;
 import app.entities.User;
+import app.exceptions.ApiException;
 import app.services.dtoConverter.UserMapper;
 import app.services.entityServices.UserService;
 import io.javalin.http.Context;
@@ -72,5 +73,11 @@ public class UserRoutes {
             return;
         }
         ctx.status(204);
+    }
+
+    public void setAdmin(Context ctx) {
+        Long id = ctx.pathParamAsClass("id", Long.class).get();
+        User user = userService.setAdmin(id);
+        ctx.json(userMapper.toDto(user));
     }
 }
