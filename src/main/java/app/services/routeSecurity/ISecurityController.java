@@ -7,4 +7,5 @@ public interface ISecurityController {
     void register(Context ctx); // to get a user
     void authenticate(Context ctx); // to verify roles inside token
     void authorize(Context ctx);
+    void changePassword(Context ctx);
 }

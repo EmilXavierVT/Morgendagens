@@ -104,6 +104,7 @@ public class Routes {
                 on.put("msg","HELLO FROM THHE RESTRICTED AREA");
                 post("register", securityController::register );
                 post("login", securityController::login );
+                put("change-password", securityController::changePassword);
                 get("protected",ctx->ctx.json(on).status(200),Role.USER);
             });
             default -> throw new IllegalArgumentException("Unknown resource name: " + resourceName);

@@ -10,5 +10,6 @@ public interface ISecurityDAO {
     User createUser(String username, String password); // used for register
     Role createRole(String role);
     User addUserRole(String username, String role);
+    void changePassword(String email, String currentPassword, String newPassword) throws ValidationException;
 }
 

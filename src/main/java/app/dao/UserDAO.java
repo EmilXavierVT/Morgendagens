@@ -161,6 +161,28 @@ public class UserDAO implements IDAO<User>,ISecurityDAO {
     }
 
     @Override
+    public void changePassword(String email, String currentPassword, String newPassword) throws ValidationException {
+        try (EntityManager em = emf.createEntityManager()) {
+            TypedQuery<User> query = em.createQuery(
+                    "SELECT u FROM User u WHERE u.email = :email", User.class);
+            query.setParameter("email", email);
+            User user;
+            try {
+                user = query.getSingleResult();
+            } catch (NoResultException e) {
+                throw new ValidationException("User not found");
+            }
+            if (!user.verifyPassword(currentPassword)) {
+                throw new ValidationException("Current password is incorrect");
+            }
+            em.getTransaction().begin();
+            user.setPassword(org.mindrot.jbcrypt.BCrypt.hashpw(newPassword, org.mindrot.jbcrypt.BCrypt.gensalt(12)));
+            em.merge(user);
+            em.getTransaction().commit();
+        }
+    }
+
+    @Override
     public Role createRole(String roleName) {
         try (EntityManager em = emf.createEntityManager()) {
             em.getTransaction().begin();

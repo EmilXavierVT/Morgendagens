@@ -75,6 +75,28 @@ public class SecurityController implements ISecurityController{
 
 
 
+    @Override
+    public void changePassword(Context ctx) {
+        UserDTO tokenUser = ctx.attribute("user");
+        if (tokenUser == null) {
+            throw new ApiException(401, "Not authenticated");
+        }
+        ObjectNode body = ctx.bodyAsClass(ObjectNode.class);
+        String currentPassword = body.path("currentPassword").asText(null);
+        String newPassword = body.path("newPassword").asText(null);
+        if (currentPassword == null || newPassword == null || newPassword.isBlank()) {
+            throw new ApiException(400, "currentPassword and newPassword are required");
+        }
+        try {
+            userDAO.changePassword(tokenUser.getEmail(), currentPassword, newPassword);
+        } catch (ValidationException e) {
+            throw new ApiException(400, e.getMessage());
+        }
+        ObjectNode node = objectMapper.createObjectNode();
+        node.put("msg", "Password changed successfully");
+        ctx.json(node).status(200);
+    }
+
     private String createToken(UserDTO user) {
         try {
             String ISSUER;
