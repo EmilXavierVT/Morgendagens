@@ -58,7 +58,7 @@ public class Routes {
             });
 
             path("/product", () -> {
-                get("/all", productRoutes::getAll, Role.USER, Role.ADMIN, Role.ANYONE);
+                get("/all", productRoutes::getAll, Role.ANYONE);
                 post("/", productRoutes::create, Role.ADMIN);
                 get("/{id}", productRoutes::getById, Role.USER, Role.ADMIN);
                 put("/{id}", productRoutes::update, Role.ADMIN);
@@ -67,7 +67,7 @@ public class Routes {
 
             path("/product-in-requests", () -> {
                 get("/all", productInRequestRoutes::getAll, Role.USER, Role.ADMIN);
-                post("/", productInRequestRoutes::create, Role.ADMIN, Role.USER);
+                post("/", productInRequestRoutes::create, Role.ANYONE);
                 get("/{id}", productInRequestRoutes::getById, Role.USER, Role.ADMIN);
                 put("/{id}", productInRequestRoutes::update, Role.ADMIN);
                 delete("/{id}", productInRequestRoutes::delete, Role.ADMIN);
@@ -75,7 +75,7 @@ public class Routes {
 
             path("/request", () -> {
                 get("/all", requestRoutes::getAll, Role.USER, Role.ADMIN);
-                post("/", requestRoutes::create, Role.USER, Role.ADMIN);
+                post("/", requestRoutes::create, Role.ANYONE);
                 get("/user/{userId}", requestRoutes::getByUserId, Role.USER, Role.ADMIN);
                 get("/{id}", requestRoutes::getById, Role.USER, Role.ADMIN);
                 put("/{id}", requestRoutes::update, Role.USER, Role.ADMIN);
