@@ -42,6 +42,14 @@ public class App {
                 .cors()
                 .exceptions()
                 .apiExceptions()
-                .start(7030);
+                .start(getPort());
+    }
+
+    private int getPort() {
+        String configuredPort = System.getenv("PORT");
+        if (configuredPort == null || configuredPort.isBlank()) {
+            return 7030;
+        }
+        return Integer.parseInt(configuredPort.trim());
     }
 }

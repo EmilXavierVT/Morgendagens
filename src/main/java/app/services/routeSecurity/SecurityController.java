@@ -107,10 +107,10 @@ public class SecurityController implements ISecurityController{
             String TOKEN_EXPIRE_TIME;
             String SECRET_KEY;
 
-            if (System.getenv("DEPLOYED") != null) {
-                ISSUER = System.getenv("ISSUER");
-                TOKEN_EXPIRE_TIME = System.getenv("TOKEN_EXPIRE_TIME");
-                SECRET_KEY = System.getenv("SECRET_KEY");
+            if (isDeployed()) {
+                ISSUER = requireEnv("ISSUER");
+                TOKEN_EXPIRE_TIME = requireEnv("TOKEN_EXPIRE_TIME");
+                SECRET_KEY = requireEnv("SECRET_KEY");
             } else {
                 ISSUER = Utils.getPropertyValue("ISSUER", "config.properties");
                 TOKEN_EXPIRE_TIME = Utils.getPropertyValue("TOKEN_EXPIRE_TIME", "config.properties");
@@ -202,8 +202,7 @@ public class SecurityController implements ISecurityController{
         return verifiedTokenUser;
     }
     private UserDTO verifyToken(String token) {
-        boolean IS_DEPLOYED = (System.getenv("DEPLOYED") != null);
-        String SECRET = IS_DEPLOYED ? System.getenv("SECRET_KEY") : Utils.getPropertyValue("SECRET_KEY", "config.properties");
+        String SECRET = isDeployed() ? requireEnv("SECRET_KEY") : Utils.getPropertyValue("SECRET_KEY", "config.properties");
 
         try {
             if (tokenSecurity.tokenIsValid(token, SECRET) && tokenSecurity.tokenNotExpired(token)) {
@@ -217,5 +216,17 @@ public class SecurityController implements ISecurityController{
         } catch (TokenVerificationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private boolean isDeployed() {
+        return System.getenv("DEPLOYED") != null || System.getenv("CONNECTION_STR") != null;
+    }
+
+    private String requireEnv(String key) {
+        String value = System.getenv(key);
+        if (value == null || value.isBlank()) {
+            throw new ApiException(500, key + " must be configured in the container environment");
+        }
+        return value.trim();
     }
 }

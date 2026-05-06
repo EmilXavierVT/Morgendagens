@@ -10,6 +10,9 @@ public class Utils {
 
     public static String getPropertyValue(String propName, String resourceName)  {
         try (InputStream is = Utils.class.getClassLoader().getResourceAsStream(resourceName)) {
+            if (is == null) {
+                throw new ApiException(500, String.format("Resource %s not found.", resourceName));
+            }
             Properties prop = new Properties();
             prop.load(is);
 

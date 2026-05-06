@@ -154,6 +154,7 @@ docker build -t morgendagens:latest .
 **Run the container:**
 ```bash
 docker run -p 7030:7030 \
+  -e DEPLOYED=true \
   -e CONNECTION_STR=jdbc:postgresql://host.docker.internal:5432/ \
   -e DB_NAME=morgendagens \
   -e DB_USERNAME=username \
@@ -176,6 +177,8 @@ The application switches between development and production mode based on the pr
 | `DB_USERNAME` | Database user | `postgres` |
 | `DB_PASSWORD` | Database password | `postgres` |
 | `CONNECTION_STR` | JDBC URL prefix (production only) | — |
+| `DEPLOYED` | Enables container/server configuration | — |
+| `PORT` | HTTP port used by the app | `7030` |
 | `ISSUER` | JWT issuer claim | `morgendagens` |
 | `TOKEN_EXPIRE_TIME` | Token TTL in milliseconds | `3600000` (1 hour) |
 | `SECRET_KEY` | HS256 signing secret (32+ bytes) | `morgendagens-very-secret-key-256bit!!` |
@@ -187,6 +190,12 @@ In production, set the `DEPLOYED` environment variable to any value and supply a
 ## API Reference
 
 All endpoints are prefixed with `/api`. Protected endpoints require an `Authorization: Bearer <token>` header.
+
+### Health
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/health` | Public | Container health check endpoint |
 
 ### Authentication
 

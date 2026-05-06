@@ -1,14 +1,18 @@
-# Start with Amazon Corretto 17 Alpine base image
+FROM maven:3.9.9-eclipse-temurin-17 AS build
+
+WORKDIR /build
+COPY pom.xml .
+COPY src ./src
+RUN mvn -q -DskipTests package
+
 FROM amazoncorretto:17-alpine
 
-# Install curl on Alpine
-RUN apk update && apk add --no-cache curl
+RUN apk add --no-cache curl
 
-# Copy the jar file into the image
-COPY target/app.jar /app.jar
+COPY --from=build /build/target/app.jar /app.jar
 
-# Expose the port your app runs on
 EXPOSE 7030
 
-# Command to run your app
-CMD ["java", "-jar", "/app.jar"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD curl -fsS "http://localhost:${PORT:-7030}/api/health" || exit 1
+
+CMD ["sh", "-c", "java ${JAVA_OPTS:-} -XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError -jar /app.jar"]

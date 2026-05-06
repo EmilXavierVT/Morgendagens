@@ -28,7 +28,7 @@ public final class HibernateConfig {
         // Teaching-friendly default - change to update in production
         props.put("hibernate.hbm2ddl.auto", "update");
 
-        if (System.getenv("DEPLOYED") != null) {
+        if (isDeployed()) {
             setDeployedProperties(props);
         } else {
             setDevProperties(props);
@@ -37,10 +37,10 @@ public final class HibernateConfig {
     }
 
     private static void setDeployedProperties(Properties props) {
-        String dbName = System.getenv("DB_NAME");
-        props.setProperty("hibernate.connection.url", System.getenv("CONNECTION_STR") + dbName);
-        props.setProperty("hibernate.connection.username", System.getenv("DB_USERNAME"));
-        props.setProperty("hibernate.connection.password", System.getenv("DB_PASSWORD"));
+        String dbName = requireEnv("DB_NAME");
+        props.setProperty("hibernate.connection.url", requireEnv("CONNECTION_STR") + dbName);
+        props.setProperty("hibernate.connection.username", requireEnv("DB_USERNAME"));
+        props.setProperty("hibernate.connection.password", requireEnv("DB_PASSWORD"));
     }
 
     private static void setDevProperties(Properties props) {
@@ -51,5 +51,17 @@ public final class HibernateConfig {
         props.put("hibernate.connection.url", "jdbc:postgresql://localhost:5432/" + dbName);
         props.put("hibernate.connection.username", username);
         props.put("hibernate.connection.password", password);
+    }
+
+    private static boolean isDeployed() {
+        return System.getenv("DEPLOYED") != null || System.getenv("CONNECTION_STR") != null;
+    }
+
+    private static String requireEnv(String key) {
+        String value = System.getenv(key);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException(key + " must be configured in the container environment");
+        }
+        return value.trim();
     }
 }

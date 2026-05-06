@@ -149,6 +149,15 @@ class RoutesTest {
     }
 
     @Test
+    void health_endpoint_is_public() {
+        given()
+                .when().get("/health")
+                .then()
+                .statusCode(200)
+                .body("status", equalTo("ok"));
+    }
+
+    @Test
     void admin_only_endpoint_with_user_role_returns_403() {
         given()
                 .header("Authorization", "Bearer " + userToken)

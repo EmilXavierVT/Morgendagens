@@ -1,0 +1,10 @@
+.git
+.idea
+.mvn
+target
+logs
+*.log
+*.jar
+config.properties
+src/main/resources/config.properties
+*.properties

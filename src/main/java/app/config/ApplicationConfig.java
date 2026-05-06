@@ -162,7 +162,7 @@ public class ApplicationConfig {
             objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
             config.events.serverStarted(() ->
-                    System.out.println("Javalin started on http://localhost:7030/api")
+                    System.out.println("Javalin started on /api")
             );
 
             config.events.serverStopped(() ->

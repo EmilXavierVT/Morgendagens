@@ -2,6 +2,7 @@ package app.services.routeSecurity.routes;
 
 
 import app.config.HibernateConfig;
+import app.controller.SystemController;
 import app.services.routeSecurity.ISecurityController;
 import app.services.routeSecurity.SecurityController;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,9 +37,11 @@ public class Routes {
         RequestRoutes requestRoutes = new RequestRoutes(emf);
         MessageRoutes messageRoutes = new MessageRoutes(emf);
         EmailRoutes emailRoutes = new EmailRoutes();
+        SystemController systemController = new SystemController();
 
         return () -> {
             get("/", ctx -> ctx.result("Hello Javalin World!"));
+            get("/health", systemController::health, Role.ANYONE);
 
             path("/tenant", () -> {
                 get("/all", tenantRoutes::getAll, Role.USER, Role.ADMIN);
