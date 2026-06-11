@@ -100,7 +100,7 @@ public class Routes {
                 post("/", workLogRoutes::create, Role.ADMIN, Role.EMPLOYEE);
                 get("/user/{userId}", workLogRoutes::getByUserId, Role.ADMIN, Role.EMPLOYEE);
                 get("/{id}", workLogRoutes::getById, Role.ADMIN, Role.EMPLOYEE);
-                put("/{id}", workLogRoutes::update, Role.ADMIN);
+                put("/{id}", workLogRoutes::update, Role.ADMIN, Role.EMPLOYEE);
                 delete("/{id}", workLogRoutes::delete, Role.ADMIN);
             });
 
