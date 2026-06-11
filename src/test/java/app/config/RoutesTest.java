@@ -44,6 +44,10 @@ class RoutesTest {
 
     @BeforeAll
     static void init() {
+        System.setProperty("ISSUER", "morgendagens-test");
+        System.setProperty("TOKEN_EXPIRE_TIME", "3600000");
+        System.setProperty("SECRET_KEY", "morgendagens-test-secret-key-32bytes!!");
+
         Properties props = HibernateBaseProperties.createBase();
         props.put("hibernate.connection.url", postgres.getJdbcUrl());
         props.put("hibernate.connection.username", postgres.getUsername());
@@ -103,6 +107,9 @@ class RoutesTest {
     static void teardown() {
         if (app != null) app.stop();
         if (emf != null) emf.close();
+        System.clearProperty("ISSUER");
+        System.clearProperty("TOKEN_EXPIRE_TIME");
+        System.clearProperty("SECRET_KEY");
     }
 
     // ─── Security layer ────────────────────────────────────────────────────────
