@@ -103,19 +103,9 @@ public class SecurityController implements ISecurityController{
 
     private String createToken(UserDTO user) {
         try {
-            String ISSUER;
-            String TOKEN_EXPIRE_TIME;
-            String SECRET_KEY;
-
-            if (isDeployed()) {
-                ISSUER = requireEnv("ISSUER");
-                TOKEN_EXPIRE_TIME = requireEnv("TOKEN_EXPIRE_TIME");
-                SECRET_KEY = requireEnv("SECRET_KEY");
-            } else {
-                ISSUER = Utils.getPropertyValue("ISSUER", "config.properties");
-                TOKEN_EXPIRE_TIME = Utils.getPropertyValue("TOKEN_EXPIRE_TIME", "config.properties");
-                SECRET_KEY = Utils.getPropertyValue("SECRET_KEY", "config.properties");
-            }
+            String ISSUER = getConfigValue("ISSUER");
+            String TOKEN_EXPIRE_TIME = getConfigValue("TOKEN_EXPIRE_TIME");
+            String SECRET_KEY = getConfigValue("SECRET_KEY");
             return tokenSecurity.createToken(user, ISSUER, TOKEN_EXPIRE_TIME, SECRET_KEY);
         } catch (Exception e) {
 //            logger.error("Could not create token", e);
@@ -202,7 +192,7 @@ public class SecurityController implements ISecurityController{
         return verifiedTokenUser;
     }
     private UserDTO verifyToken(String token) {
-        String SECRET = isDeployed() ? requireEnv("SECRET_KEY") : Utils.getPropertyValue("SECRET_KEY", "config.properties");
+        String SECRET = getConfigValue("SECRET_KEY");
 
         try {
             if (tokenSecurity.tokenIsValid(token, SECRET) && tokenSecurity.tokenNotExpired(token)) {
@@ -220,6 +210,14 @@ public class SecurityController implements ISecurityController{
 
     private boolean isDeployed() {
         return System.getenv("DEPLOYED") != null || System.getenv("CONNECTION_STR") != null;
+    }
+
+    private String getConfigValue(String key) {
+        String envValue = System.getenv(key);
+        if (envValue != null && !envValue.isBlank()) {
+            return envValue.trim();
+        }
+        return Utils.getPropertyValue(key, "config.properties");
     }
 
     private String requireEnv(String key) {
