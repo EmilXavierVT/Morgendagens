@@ -103,6 +103,45 @@ public class UserDAO implements IDAO<User>,ISecurityDAO {
         }
     }
 
+    public User getByIdWithRoles(Long id) {
+        try (EntityManager em = emf.createEntityManager()) {
+            TypedQuery<User> query = em.createQuery(
+                    "SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.roles WHERE u.id = :id",
+                    User.class
+            );
+            query.setParameter("id", id);
+            return query.getSingleResult();
+        } catch (NoResultException ex) {
+            return null;
+        }
+    }
+
+    public User getByIdWithMessagesAndRoles(Long id) {
+        try (EntityManager em = emf.createEntityManager()) {
+            TypedQuery<User> query = em.createQuery(
+                    "SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.messages LEFT JOIN FETCH u.roles WHERE u.id = :id",
+                    User.class
+            );
+            query.setParameter("id", id);
+            return query.getSingleResult();
+        } catch (NoResultException ex) {
+            return null;
+        }
+    }
+
+    public User getByEmailWithRoles(String email) {
+        try (EntityManager em = emf.createEntityManager()) {
+            TypedQuery<User> query = em.createQuery(
+                    "SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.roles WHERE u.email = :email",
+                    User.class
+            );
+            query.setParameter("email", email);
+            return query.getSingleResult();
+        } catch (NoResultException ex) {
+            return null;
+        }
+    }
+
 
 //hashing
 
@@ -246,7 +285,7 @@ public class UserDAO implements IDAO<User>,ISecurityDAO {
             user.addRole(role);
             em.merge(user);
             em.getTransaction().commit();
-            return user;
+            return getByIdWithMessagesAndRoles(user.getId());
         }
     }
 

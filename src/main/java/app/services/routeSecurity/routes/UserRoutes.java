@@ -79,4 +79,10 @@ public class UserRoutes {
         User user = userService.setAdmin(id);
         ctx.json(userMapper.toDto(user));
     }
+
+    public void setEmployee(Context ctx) {
+        Long id = ctx.pathParamAsClass("id", Long.class).get();
+        User user = userService.setEmployee(id);
+        ctx.json(userMapper.toDto(user));
+    }
 }

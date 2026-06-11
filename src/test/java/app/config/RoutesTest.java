@@ -255,6 +255,20 @@ class RoutesTest {
                 .body("firstName", equalTo("New"));
     }
 
+    @Test
+    void set_employee_adds_employee_role_to_user() {
+        long tenantId = createTenantId("tenant-user-employee");
+        long userId = createUserId(tenantId, "Employee", "Candidate", "employee.role." + System.nanoTime() + "@example.com");
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().put("/user/{id}/employee", userId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) userId))
+                .body("roles", hasItems("EMPLOYEE"));
+    }
+
     // ─── Request routes ────────────────────────────────────────────────────────
 
     @Test
@@ -343,6 +357,137 @@ class RoutesTest {
                 .body("$", hasSize(0));
     }
 
+    // ─── WorkLog routes ────────────────────────────────────────────────────────
+
+    @Test
+    void worklog_create_and_get_by_id_for_employee_user() {
+        long tenantId = createTenantId("tenant-worklog-create");
+        long userId = createUserId(tenantId, "Work", "Logger", "worklog.create." + System.nanoTime() + "@example.com");
+        assignEmployeeRole(userId);
+
+        Number workLogIdNumber = given()
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "startTime": "2026-03-13T08:00:00",
+                          "endTime": "2026-03-13T16:00:00",
+                          "userId": %d
+                        }
+                        """.formatted(userId))
+                .when().post("/worklog/")
+                .then()
+                .statusCode(201)
+                .body("id", notNullValue())
+                .body("userId", equalTo((int) userId))
+                .extract()
+                .path("id");
+        long workLogId = workLogIdNumber.longValue();
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().get("/worklog/{id}", workLogId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) workLogId))
+                .body("userId", equalTo((int) userId))
+                .body("startTime", equalTo("2026-03-13T08:00:00"))
+                .body("endTime", equalTo("2026-03-13T16:00:00"));
+    }
+
+    @Test
+    void employee_can_create_own_worklog() {
+        String email = "worklog.self." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-worklog-self");
+        long userId = createUserId(tenantId, "Self", "Logger", email);
+        assignEmployeeRole(userId);
+        String employeeToken = loginAndGetToken(email, "secret");
+
+        given()
+                .header("Authorization", "Bearer " + employeeToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "startTime": "2026-03-13T08:00:00",
+                          "endTime": "2026-03-13T16:00:00",
+                          "userId": %d
+                        }
+                        """.formatted(userId))
+                .when().post("/worklog/")
+                .then()
+                .statusCode(201)
+                .body("userId", equalTo((int) userId));
+    }
+
+    @Test
+    void employee_cannot_create_worklog_for_other_employee() {
+        String email = "worklog.blocked." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-worklog-blocked");
+        long employeeId = createUserId(tenantId, "Blocked", "Logger", email);
+        long otherEmployeeId = createUserId(tenantId, "Other", "Logger", "worklog.other." + System.nanoTime() + "@example.com");
+        assignEmployeeRole(employeeId);
+        assignEmployeeRole(otherEmployeeId);
+        String employeeToken = loginAndGetToken(email, "secret");
+
+        given()
+                .header("Authorization", "Bearer " + employeeToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "startTime": "2026-03-13T08:00:00",
+                          "endTime": "2026-03-13T16:00:00",
+                          "userId": %d
+                        }
+                        """.formatted(otherEmployeeId))
+                .when().post("/worklog/")
+                .then()
+                .statusCode(403)
+                .body("msg", equalTo("Employees can only create worklogs for themselves"));
+    }
+
+    @Test
+    void worklog_create_for_non_employee_user_returns_400() {
+        long tenantId = createTenantId("tenant-worklog-non-employee");
+        long userId = createUserId(tenantId, "Plain", "User", "worklog.reject." + System.nanoTime() + "@example.com");
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "startTime": "2026-03-13T08:00:00",
+                          "endTime": "2026-03-13T16:00:00",
+                          "userId": %d
+                        }
+                        """.formatted(userId))
+                .when().post("/worklog/")
+                .then()
+                .statusCode(400)
+                .body("msg", equalTo("User must have EMPLOYEE role"));
+    }
+
+    @Test
+    void get_worklogs_by_user_id_returns_only_that_users_logs() {
+        long tenantId = createTenantId("tenant-worklog-by-user");
+        long employeeId = createUserId(tenantId, "Hours", "One", "worklog.one." + System.nanoTime() + "@example.com");
+        long otherEmployeeId = createUserId(tenantId, "Hours", "Two", "worklog.two." + System.nanoTime() + "@example.com");
+        assignEmployeeRole(employeeId);
+        assignEmployeeRole(otherEmployeeId);
+
+        createWorkLogId(employeeId, "2026-03-13T08:00:00", "2026-03-13T12:00:00");
+        createWorkLogId(employeeId, "2026-03-13T13:00:00", "2026-03-13T17:00:00");
+        createWorkLogId(otherEmployeeId, "2026-03-14T08:00:00", "2026-03-14T12:00:00");
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().get("/worklog/user/{userId}", employeeId)
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(2))
+                .body("[0].userId", equalTo((int) employeeId))
+                .body("[1].userId", equalTo((int) employeeId));
+    }
+
     // ─── Helpers ───────────────────────────────────────────────────────────────
 
     private static String loginAndGetToken(String email, String password) {
@@ -389,6 +534,14 @@ class RoutesTest {
         return userId.longValue();
     }
 
+    private static void assignEmployeeRole(long userId) {
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().put("/user/{id}/employee", userId)
+                .then()
+                .statusCode(200);
+    }
+
     private static long createRequestId(long tenantId, int status, int type) {
         Number requestId = given()
                 .header("Authorization", "Bearer " + adminToken)
@@ -410,5 +563,24 @@ class RoutesTest {
                 .extract()
                 .path("id");
         return requestId.longValue();
+    }
+
+    private static long createWorkLogId(long userId, String startTime, String endTime) {
+        Number workLogId = given()
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "startTime": "%s",
+                          "endTime": "%s",
+                          "userId": %d
+                        }
+                        """.formatted(startTime, endTime, userId))
+                .when().post("/worklog/")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+        return workLogId.longValue();
     }
 }
