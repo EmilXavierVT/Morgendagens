@@ -31,8 +31,11 @@ final class HibernateEmfBuilder {
             return sf.unwrap(EntityManagerFactory.class);
 
         } catch (Throwable ex) {
-            System.err.println("Initial SessionFactory creation failed: " + ex);
-            throw new ExceptionInInitializerError(ex);
+            String message = "Failed to initialize Hibernate SessionFactory. " +
+                    "Check database configuration, database availability, and registered entities.";
+            System.err.println(message);
+            ex.printStackTrace(System.err);
+            throw new IllegalStateException(message, ex);
         }
     }
 }
