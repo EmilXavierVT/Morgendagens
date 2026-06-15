@@ -14,6 +14,7 @@ public class CleaningAppointmentMapper {
         dto.setCleaningStaffId(appointment.getCleaningStaff() != null ? appointment.getCleaningStaff().getId() : null);
         dto.setAppointmentTime(appointment.getAppointmentTime());
         dto.setDurationMinutes(appointment.getDurationMinutes());
+        dto.setVacation(appointment.isVacation());
         return dto;
     }
 
@@ -24,6 +25,7 @@ public class CleaningAppointmentMapper {
         appointment.setId(dto.getId());
         appointment.setAppointmentTime(dto.getAppointmentTime());
         appointment.setDurationMinutes(dto.getDurationMinutes());
+        appointment.setVacation(dto.isVacation());
 
         if (dto.getCleaningClientId() != null) {
             User client = new User();

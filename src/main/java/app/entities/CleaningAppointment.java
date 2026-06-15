@@ -31,4 +31,6 @@ public class CleaningAppointment implements IEntity {
     private LocalDateTime appointmentTime;
 
     private int durationMinutes;
+
+    private boolean vacation;
 }

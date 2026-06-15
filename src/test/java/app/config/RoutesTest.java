@@ -526,7 +526,8 @@ class RoutesTest {
                           "cleaningClientId": %d,
                           "cleaningStaffId": %d,
                           "appointmentTime": "2026-03-13T09:00:00",
-                          "durationMinutes": 90
+                          "durationMinutes": 90,
+                          "vacation": false
                         }
                         """.formatted(cleaningClientId, cleaningStaffId))
                 .when().post("/cleaning-appointment/")
@@ -537,6 +538,7 @@ class RoutesTest {
                 .body("cleaningStaffId", equalTo((int) cleaningStaffId))
                 .body("appointmentTime", equalTo("2026-03-13T09:00:00"))
                 .body("durationMinutes", equalTo(90))
+                .body("vacation", equalTo(false))
                 .extract()
                 .path("id");
         long appointmentId = appointmentIdNumber.longValue();
@@ -548,7 +550,8 @@ class RoutesTest {
                 .statusCode(200)
                 .body("id", equalTo((int) appointmentId))
                 .body("cleaningClientId", equalTo((int) cleaningClientId))
-                .body("cleaningStaffId", equalTo((int) cleaningStaffId));
+                .body("cleaningStaffId", equalTo((int) cleaningStaffId))
+                .body("vacation", equalTo(false));
     }
 
     @Test
@@ -570,7 +573,8 @@ class RoutesTest {
                           "cleaningClientId": %d,
                           "cleaningStaffId": %d,
                           "appointmentTime": "2026-03-13T09:00:00",
-                          "durationMinutes": 90
+                          "durationMinutes": 90,
+                          "vacation": true
                         }
                         """.formatted(cleaningClientId, otherCleaningStaffId))
                 .when().post("/cleaning-appointment/")
@@ -591,7 +595,8 @@ class RoutesTest {
                         {
                           "cleaningClientId": %d,
                           "appointmentTime": "2026-03-13T09:00:00",
-                          "durationMinutes": 90
+                          "durationMinutes": 90,
+                          "vacation": false
                         }
                         """.formatted(cleaningClientId))
                 .when().post("/cleaning-appointment/")
