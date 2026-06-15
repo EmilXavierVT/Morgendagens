@@ -37,6 +37,7 @@ public class Routes {
         RequestRoutes requestRoutes = new RequestRoutes(emf);
         MessageRoutes messageRoutes = new MessageRoutes(emf);
         WorkLogRoutes workLogRoutes = new WorkLogRoutes(emf);
+        CleaningAppointmentRoutes cleaningAppointmentRoutes = new CleaningAppointmentRoutes(emf);
         EmailRoutes emailRoutes = new EmailRoutes();
         SystemController systemController = new SystemController();
 
@@ -60,6 +61,7 @@ public class Routes {
                 delete("/{id}", userRoutes::delete, Role.ADMIN);
                 put("/{id}/admin", userRoutes::setAdmin, Role.ADMIN);
                 put("/{id}/employee", userRoutes::setEmployee, Role.ADMIN);
+                put("/{id}/cleaning-staff", userRoutes::setCleaningStaff, Role.ADMIN);
             });
 
             path("/product", () -> {
@@ -104,6 +106,12 @@ public class Routes {
                 delete("/{id}", workLogRoutes::delete, Role.ADMIN);
             });
 
+            path("/cleaning-appointment", () -> {
+                get("/all", cleaningAppointmentRoutes::getAll, Role.ADMIN, Role.CLEANING_STAFF);
+                post("/", cleaningAppointmentRoutes::create, Role.ADMIN, Role.CLEANING_STAFF);
+                get("/{id}", cleaningAppointmentRoutes::getById, Role.ADMIN, Role.CLEANING_STAFF);
+            });
+
             path("/email", () -> {
                 post("/send", emailRoutes::send, Role.USER, Role.ADMIN);
             });
@@ -132,7 +140,7 @@ public class Routes {
     }
 
     public enum Role implements RouteRole {
-        ANYONE,USER,ADMIN,EMPLOYEE
+        ANYONE,USER,ADMIN,EMPLOYEE,CLEANING_STAFF,CLEANING_CLIENT
     }
 
 }

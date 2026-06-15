@@ -276,6 +276,20 @@ class RoutesTest {
                 .body("roles", hasItems("EMPLOYEE"));
     }
 
+    @Test
+    void set_cleaning_staff_adds_cleaning_staff_role_to_user() {
+        long tenantId = createTenantId("tenant-user-cleaning-staff");
+        long userId = createUserId(tenantId, "Cleaner", "Candidate", "cleaner.role." + System.nanoTime() + "@example.com");
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().put("/user/{id}/cleaning-staff", userId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) userId))
+                .body("roles", hasItems("CLEANING_STAFF"));
+    }
+
     // ─── Request routes ────────────────────────────────────────────────────────
 
     @Test
@@ -495,6 +509,96 @@ class RoutesTest {
                 .body("[1].userId", equalTo((int) employeeId));
     }
 
+    @Test
+    void cleaning_staff_can_create_and_get_own_appointment() {
+        String staffEmail = "cleaning.staff." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-cleaning-appointment-create");
+        long cleaningStaffId = createUserId(tenantId, "Cleaning", "Staff", staffEmail);
+        long cleaningClientId = createUserId(tenantId, "Cleaning", "Client", "cleaning.client." + System.nanoTime() + "@example.com");
+        assignCleaningStaffRole(cleaningStaffId);
+        String cleaningStaffToken = loginAndGetToken(staffEmail, "secret");
+
+        Number appointmentIdNumber = given()
+                .header("Authorization", "Bearer " + cleaningStaffToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "cleaningClientId": %d,
+                          "cleaningStaffId": %d,
+                          "appointmentTime": "2026-03-13T09:00:00",
+                          "durationMinutes": 90
+                        }
+                        """.formatted(cleaningClientId, cleaningStaffId))
+                .when().post("/cleaning-appointment/")
+                .then()
+                .statusCode(201)
+                .body("id", notNullValue())
+                .body("cleaningClientId", equalTo((int) cleaningClientId))
+                .body("cleaningStaffId", equalTo((int) cleaningStaffId))
+                .body("appointmentTime", equalTo("2026-03-13T09:00:00"))
+                .body("durationMinutes", equalTo(90))
+                .extract()
+                .path("id");
+        long appointmentId = appointmentIdNumber.longValue();
+
+        given()
+                .header("Authorization", "Bearer " + cleaningStaffToken)
+                .when().get("/cleaning-appointment/{id}", appointmentId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) appointmentId))
+                .body("cleaningClientId", equalTo((int) cleaningClientId))
+                .body("cleaningStaffId", equalTo((int) cleaningStaffId));
+    }
+
+    @Test
+    void cleaning_staff_cannot_create_appointment_for_other_staff() {
+        String staffEmail = "cleaning.staff.blocked." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-cleaning-appointment-blocked");
+        long cleaningStaffId = createUserId(tenantId, "Cleaning", "Staff", staffEmail);
+        long otherCleaningStaffId = createUserId(tenantId, "Other", "Staff", "cleaning.staff.other." + System.nanoTime() + "@example.com");
+        long cleaningClientId = createUserId(tenantId, "Cleaning", "Client", "cleaning.client.blocked." + System.nanoTime() + "@example.com");
+        assignCleaningStaffRole(cleaningStaffId);
+        assignCleaningStaffRole(otherCleaningStaffId);
+        String cleaningStaffToken = loginAndGetToken(staffEmail, "secret");
+
+        given()
+                .header("Authorization", "Bearer " + cleaningStaffToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "cleaningClientId": %d,
+                          "cleaningStaffId": %d,
+                          "appointmentTime": "2026-03-13T09:00:00",
+                          "durationMinutes": 90
+                        }
+                        """.formatted(cleaningClientId, otherCleaningStaffId))
+                .when().post("/cleaning-appointment/")
+                .then()
+                .statusCode(403)
+                .body("msg", equalTo("Cleaning staff can only create appointments for themselves"));
+    }
+
+    @Test
+    void regular_user_cannot_create_cleaning_appointment() {
+        long tenantId = createTenantId("tenant-cleaning-appointment-role-protection");
+        long cleaningClientId = createUserId(tenantId, "Cleaning", "Client", "cleaning.client.protected." + System.nanoTime() + "@example.com");
+
+        given()
+                .header("Authorization", "Bearer " + userToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "cleaningClientId": %d,
+                          "appointmentTime": "2026-03-13T09:00:00",
+                          "durationMinutes": 90
+                        }
+                        """.formatted(cleaningClientId))
+                .when().post("/cleaning-appointment/")
+                .then()
+                .statusCode(403);
+    }
+
     // ─── Helpers ───────────────────────────────────────────────────────────────
 
     private static String loginAndGetToken(String email, String password) {
@@ -545,6 +649,14 @@ class RoutesTest {
         given()
                 .header("Authorization", "Bearer " + adminToken)
                 .when().put("/user/{id}/employee", userId)
+                .then()
+                .statusCode(200);
+    }
+
+    private static void assignCleaningStaffRole(long userId) {
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().put("/user/{id}/cleaning-staff", userId)
                 .then()
                 .statusCode(200);
     }

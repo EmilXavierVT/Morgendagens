@@ -85,4 +85,10 @@ public class UserRoutes {
         User user = userService.setEmployee(id);
         ctx.json(userMapper.toDto(user));
     }
+
+    public void setCleaningStaff(Context ctx) {
+        Long id = ctx.pathParamAsClass("id", Long.class).get();
+        User user = userService.setCleaningStaff(id);
+        ctx.json(userMapper.toDto(user));
+    }
 }

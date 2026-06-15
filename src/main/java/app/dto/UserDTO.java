@@ -22,8 +22,8 @@ public class UserDTO {
     private String lastName;
     private int zipCode;
     private String email;
-    private String password;
     private String phoneNumber;
+    private String password;
     private List<Long> messageIds;
     Set<String> roles = new HashSet();
 
