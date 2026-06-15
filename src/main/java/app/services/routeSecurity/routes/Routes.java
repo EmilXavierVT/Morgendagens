@@ -110,6 +110,8 @@ public class Routes {
                 get("/all", cleaningAppointmentRoutes::getAll, Role.ADMIN, Role.CLEANING_STAFF);
                 post("/", cleaningAppointmentRoutes::create, Role.ADMIN, Role.CLEANING_STAFF);
                 get("/{id}", cleaningAppointmentRoutes::getById, Role.ADMIN, Role.CLEANING_STAFF);
+                put("/{id}", cleaningAppointmentRoutes::update, Role.ADMIN, Role.CLEANING_STAFF);
+                delete("/{id}", cleaningAppointmentRoutes::delete, Role.ADMIN, Role.CLEANING_STAFF);
             });
 
             path("/email", () -> {

@@ -555,6 +555,69 @@ class RoutesTest {
     }
 
     @Test
+    void cleaning_staff_can_update_and_delete_own_appointment() {
+        String staffEmail = "cleaning.staff.update." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-cleaning-appointment-update");
+        long cleaningStaffId = createUserId(tenantId, "Cleaning", "Staff", staffEmail);
+        long cleaningClientId = createUserId(tenantId, "Cleaning", "Client", "cleaning.client.update." + System.nanoTime() + "@example.com");
+        assignCleaningStaffRole(cleaningStaffId);
+        String cleaningStaffToken = loginAndGetToken(staffEmail, "secret");
+        long appointmentId = createCleaningAppointmentId(cleaningClientId, cleaningStaffId, false);
+
+        given()
+                .header("Authorization", "Bearer " + cleaningStaffToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "cleaningClientId": %d,
+                          "cleaningStaffId": %d,
+                          "appointmentTime": "2026-03-14T10:30:00",
+                          "durationMinutes": 120,
+                          "vacation": true
+                        }
+                        """.formatted(cleaningClientId, cleaningStaffId))
+                .when().put("/cleaning-appointment/{id}", appointmentId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) appointmentId))
+                .body("appointmentTime", equalTo("2026-03-14T10:30:00"))
+                .body("durationMinutes", equalTo(120))
+                .body("vacation", equalTo(true));
+
+        given()
+                .header("Authorization", "Bearer " + cleaningStaffToken)
+                .when().delete("/cleaning-appointment/{id}", appointmentId)
+                .then()
+                .statusCode(204);
+
+        given()
+                .header("Authorization", "Bearer " + cleaningStaffToken)
+                .when().get("/cleaning-appointment/{id}", appointmentId)
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    void cleaning_staff_cannot_delete_other_staff_appointment() {
+        String staffEmail = "cleaning.staff.delete.blocked." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-cleaning-appointment-delete-blocked");
+        long cleaningStaffId = createUserId(tenantId, "Cleaning", "Staff", staffEmail);
+        long otherCleaningStaffId = createUserId(tenantId, "Other", "Staff", "cleaning.staff.delete.other." + System.nanoTime() + "@example.com");
+        long cleaningClientId = createUserId(tenantId, "Cleaning", "Client", "cleaning.client.delete.blocked." + System.nanoTime() + "@example.com");
+        assignCleaningStaffRole(cleaningStaffId);
+        assignCleaningStaffRole(otherCleaningStaffId);
+        String cleaningStaffToken = loginAndGetToken(staffEmail, "secret");
+        long appointmentId = createCleaningAppointmentId(cleaningClientId, otherCleaningStaffId, false);
+
+        given()
+                .header("Authorization", "Bearer " + cleaningStaffToken)
+                .when().delete("/cleaning-appointment/{id}", appointmentId)
+                .then()
+                .statusCode(403)
+                .body("msg", equalTo("Cleaning staff can only delete their own appointments"));
+    }
+
+    @Test
     void cleaning_staff_cannot_create_appointment_for_other_staff() {
         String staffEmail = "cleaning.staff.blocked." + System.nanoTime() + "@example.com";
         long tenantId = createTenantId("tenant-cleaning-appointment-blocked");
@@ -706,5 +769,26 @@ class RoutesTest {
                 .extract()
                 .path("id");
         return workLogId.longValue();
+    }
+
+    private static long createCleaningAppointmentId(long cleaningClientId, long cleaningStaffId, boolean vacation) {
+        Number appointmentId = given()
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "cleaningClientId": %d,
+                          "cleaningStaffId": %d,
+                          "appointmentTime": "2026-03-13T09:00:00",
+                          "durationMinutes": 90,
+                          "vacation": %s
+                        }
+                        """.formatted(cleaningClientId, cleaningStaffId, vacation))
+                .when().post("/cleaning-appointment/")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+        return appointmentId.longValue();
     }
 }

@@ -73,6 +73,39 @@ public class CleaningAppointmentRoutes {
         ctx.status(201).json(cleaningAppointmentMapper.toDto(created));
     }
 
+    public void update(Context ctx) {
+        UserDTO authenticatedUser = ctx.attribute("user");
+        Long id = ctx.pathParamAsClass("id", Long.class).get();
+        CleaningAppointment existing = cleaningAppointmentService.getById(id);
+        if (existing == null) {
+            ctx.status(404).result("CleaningAppointment not found");
+            return;
+        }
+
+        ensureOwnership(existing, authenticatedUser, "Cleaning staff can only update their own appointments");
+
+        CleaningAppointmentDTO dto = ctx.bodyValidator(CleaningAppointmentDTO.class).get();
+        dto.setId(id);
+        applyAuthenticatedUserRules(dto, authenticatedUser);
+        CleaningAppointment appointment = cleaningAppointmentMapper.fromDto(dto);
+        CleaningAppointment updated = cleaningAppointmentService.update(appointment);
+        ctx.json(cleaningAppointmentMapper.toDto(updated));
+    }
+
+    public void delete(Context ctx) {
+        UserDTO authenticatedUser = ctx.attribute("user");
+        Long id = ctx.pathParamAsClass("id", Long.class).get();
+        CleaningAppointment existing = cleaningAppointmentService.getById(id);
+        if (existing == null) {
+            ctx.status(404).result("CleaningAppointment not found");
+            return;
+        }
+
+        ensureOwnership(existing, authenticatedUser, "Cleaning staff can only delete their own appointments");
+        cleaningAppointmentService.delete(id);
+        ctx.status(204);
+    }
+
     private void applyAuthenticatedUserRules(CleaningAppointmentDTO dto, UserDTO authenticatedUser) {
         if (authenticatedUser == null) {
             throw new ApiException(401, "Not authenticated");
@@ -96,6 +129,17 @@ public class CleaningAppointmentRoutes {
     private boolean isAdmin(UserDTO authenticatedUser) {
         return authenticatedUser != null && authenticatedUser.getRoles().stream()
                 .anyMatch(role -> role.equalsIgnoreCase("ADMIN"));
+    }
+
+    private void ensureOwnership(CleaningAppointment appointment, UserDTO authenticatedUser, String message) {
+        if (isAdmin(authenticatedUser)) {
+            return;
+        }
+
+        User currentUser = getCurrentUser(authenticatedUser);
+        if (!appointment.getCleaningStaff().getId().equals(currentUser.getId())) {
+            throw new ApiException(403, message);
+        }
     }
 
     private User getCurrentUser(UserDTO authenticatedUser) {
