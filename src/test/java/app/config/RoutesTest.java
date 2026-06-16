@@ -290,6 +290,20 @@ class RoutesTest {
                 .body("roles", hasItems("CLEANING_STAFF"));
     }
 
+    @Test
+    void set_cleaning_client_adds_cleaning_client_role_to_user() {
+        long tenantId = createTenantId("tenant-user-cleaning-client");
+        long userId = createUserId(tenantId, "Client", "Candidate", "cleaning.client.role." + System.nanoTime() + "@example.com");
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().put("/user/{id}/cleaning-client", userId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) userId))
+                .body("roles", hasItems("CLEANING_CLIENT"));
+    }
+
     // ─── Request routes ────────────────────────────────────────────────────────
 
     @Test
@@ -667,6 +681,88 @@ class RoutesTest {
                 .statusCode(403);
     }
 
+    @Test
+    void cleaning_client_can_create_appointment_for_self_when_staff_is_provided() {
+        String clientEmail = "cleaning.client.self." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-cleaning-client-create");
+        long cleaningClientId = createUserId(tenantId, "Cleaning", "Client", clientEmail);
+        long cleaningStaffId = createUserId(tenantId, "Cleaning", "Staff", "cleaning.staff.assigned." + System.nanoTime() + "@example.com");
+        assignCleaningClientRole(cleaningClientId);
+        assignCleaningStaffRole(cleaningStaffId);
+        String cleaningClientToken = loginAndGetToken(clientEmail, "secret");
+
+        given()
+                .header("Authorization", "Bearer " + cleaningClientToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "cleaningClientId": %d,
+                          "cleaningStaffId": %d,
+                          "appointmentTime": "2026-03-13T09:00:00",
+                          "durationMinutes": 120,
+                          "vacation": false
+                        }
+                        """.formatted(cleaningClientId, cleaningStaffId))
+                .when().post("/cleaning-appointment/")
+                .then()
+                .statusCode(201)
+                .body("cleaningClientId", equalTo((int) cleaningClientId))
+                .body("cleaningStaffId", equalTo((int) cleaningStaffId));
+    }
+
+    @Test
+    void cleaning_client_can_read_update_and_delete_own_appointment() {
+        String clientEmail = "cleaning.client.crud." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-cleaning-client-crud");
+        long cleaningClientId = createUserId(tenantId, "Cleaning", "Client", clientEmail);
+        long cleaningStaffId = createUserId(tenantId, "Cleaning", "Staff", "cleaning.staff.crud." + System.nanoTime() + "@example.com");
+        assignCleaningClientRole(cleaningClientId);
+        assignCleaningStaffRole(cleaningStaffId);
+        String cleaningClientToken = loginAndGetToken(clientEmail, "secret");
+        long appointmentId = createCleaningAppointmentId(cleaningClientId, cleaningStaffId, false);
+
+        given()
+                .header("Authorization", "Bearer " + cleaningClientToken)
+                .when().get("/cleaning-appointment/{id}", appointmentId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) appointmentId))
+                .body("cleaningClientId", equalTo((int) cleaningClientId));
+
+        given()
+                .header("Authorization", "Bearer " + cleaningClientToken)
+                .when().get("/cleaning-appointment/all")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(1))
+                .body("[0].id", equalTo((int) appointmentId));
+
+        given()
+                .header("Authorization", "Bearer " + cleaningClientToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "cleaningClientId": %d,
+                          "cleaningStaffId": %d,
+                          "appointmentTime": "2026-03-14T11:00:00",
+                          "durationMinutes": 60,
+                          "vacation": true
+                        }
+                        """.formatted(cleaningClientId, cleaningStaffId))
+                .when().put("/cleaning-appointment/{id}", appointmentId)
+                .then()
+                .statusCode(200)
+                .body("appointmentTime", equalTo("2026-03-14T11:00:00"))
+                .body("durationMinutes", equalTo(60))
+                .body("vacation", equalTo(true));
+
+        given()
+                .header("Authorization", "Bearer " + cleaningClientToken)
+                .when().delete("/cleaning-appointment/{id}", appointmentId)
+                .then()
+                .statusCode(204);
+    }
+
     // ─── Helpers ───────────────────────────────────────────────────────────────
 
     private static String loginAndGetToken(String email, String password) {
@@ -725,6 +821,14 @@ class RoutesTest {
         given()
                 .header("Authorization", "Bearer " + adminToken)
                 .when().put("/user/{id}/cleaning-staff", userId)
+                .then()
+                .statusCode(200);
+    }
+
+    private static void assignCleaningClientRole(long userId) {
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().put("/user/{id}/cleaning-client", userId)
                 .then()
                 .statusCode(200);
     }

@@ -93,6 +93,16 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
         }
     }
 
+    public List<CleaningAppointment> getByCleaningClientId(Long cleaningClientId) {
+        try (EntityManager em = emf.createEntityManager()) {
+            return em.createQuery(
+                            "SELECT ca FROM CleaningAppointment ca JOIN FETCH ca.cleaningClient JOIN FETCH ca.cleaningStaff WHERE ca.cleaningClient.id = :cleaningClientId ORDER BY ca.appointmentTime",
+                            CleaningAppointment.class)
+                    .setParameter("cleaningClientId", cleaningClientId)
+                    .getResultList();
+        }
+    }
+
     private void attachUsers(EntityManager em, CleaningAppointment appointment) {
         User client = appointment.getCleaningClient();
         if (client == null || client.getId() == null) {

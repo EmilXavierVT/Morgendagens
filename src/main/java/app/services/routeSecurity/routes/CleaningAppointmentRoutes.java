@@ -39,6 +39,14 @@ public class CleaningAppointmentRoutes {
         }
 
         User currentUser = getCurrentUser(authenticatedUser);
+        if (hasRole(authenticatedUser, "CLEANING_CLIENT")) {
+            for (CleaningAppointment appointment : cleaningAppointmentService.getByCleaningClientId(currentUser.getId())) {
+                dtos.add(cleaningAppointmentMapper.toDto(appointment));
+            }
+            ctx.json(dtos);
+            return;
+        }
+
         for (CleaningAppointment appointment : cleaningAppointmentService.getByCleaningStaffId(currentUser.getId())) {
             dtos.add(cleaningAppointmentMapper.toDto(appointment));
         }
@@ -54,12 +62,7 @@ public class CleaningAppointmentRoutes {
             return;
         }
 
-        if (!isAdmin(authenticatedUser)) {
-            User currentUser = getCurrentUser(authenticatedUser);
-            if (!appointment.getCleaningStaff().getId().equals(currentUser.getId())) {
-                throw new ApiException(403, "Cleaning staff can only access their own appointments");
-            }
-        }
+        ensureOwnership(appointment, authenticatedUser, "You can only access your own appointments");
 
         ctx.json(cleaningAppointmentMapper.toDto(appointment));
     }
@@ -116,6 +119,20 @@ public class CleaningAppointmentRoutes {
         }
 
         User currentUser = getCurrentUser(authenticatedUser);
+
+        if (hasRole(authenticatedUser, "CLEANING_CLIENT")) {
+            if (dto.getCleaningClientId() == null) {
+                dto.setCleaningClientId(currentUser.getId());
+            } else if (!dto.getCleaningClientId().equals(currentUser.getId())) {
+                throw new ApiException(403, "Cleaning clients can only create appointments for themselves");
+            }
+
+            if (dto.getCleaningStaffId() == null) {
+                throw new ApiException(400, "cleaningStaffId is required");
+            }
+            return;
+        }
+
         if (dto.getCleaningStaffId() == null) {
             dto.setCleaningStaffId(currentUser.getId());
             return;
@@ -127,8 +144,7 @@ public class CleaningAppointmentRoutes {
     }
 
     private boolean isAdmin(UserDTO authenticatedUser) {
-        return authenticatedUser != null && authenticatedUser.getRoles().stream()
-                .anyMatch(role -> role.equalsIgnoreCase("ADMIN"));
+        return hasRole(authenticatedUser, "ADMIN");
     }
 
     private void ensureOwnership(CleaningAppointment appointment, UserDTO authenticatedUser, String message) {
@@ -137,9 +153,19 @@ public class CleaningAppointmentRoutes {
         }
 
         User currentUser = getCurrentUser(authenticatedUser);
-        if (!appointment.getCleaningStaff().getId().equals(currentUser.getId())) {
+        boolean ownsAsClient = hasRole(authenticatedUser, "CLEANING_CLIENT")
+                && appointment.getCleaningClient().getId().equals(currentUser.getId());
+        boolean ownsAsStaff = hasRole(authenticatedUser, "CLEANING_STAFF")
+                && appointment.getCleaningStaff().getId().equals(currentUser.getId());
+
+        if (!ownsAsClient && !ownsAsStaff) {
             throw new ApiException(403, message);
         }
+    }
+
+    private boolean hasRole(UserDTO authenticatedUser, String roleName) {
+        return authenticatedUser != null && authenticatedUser.getRoles().stream()
+                .anyMatch(role -> role.equalsIgnoreCase(roleName));
     }
 
     private User getCurrentUser(UserDTO authenticatedUser) {

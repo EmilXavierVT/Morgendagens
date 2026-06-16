@@ -62,6 +62,7 @@ public class Routes {
                 put("/{id}/admin", userRoutes::setAdmin, Role.ADMIN);
                 put("/{id}/employee", userRoutes::setEmployee, Role.ADMIN);
                 put("/{id}/cleaning-staff", userRoutes::setCleaningStaff, Role.ADMIN);
+                put("/{id}/cleaning-client", userRoutes::setCleaningClient, Role.ADMIN);
             });
 
             path("/product", () -> {
