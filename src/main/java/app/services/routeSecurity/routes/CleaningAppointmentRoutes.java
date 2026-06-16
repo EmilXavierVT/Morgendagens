@@ -47,7 +47,7 @@ public class CleaningAppointmentRoutes {
             return;
         }
 
-        for (CleaningAppointment appointment : cleaningAppointmentService.getByCleaningStaffId(currentUser.getId())) {
+        for (CleaningAppointment appointment : cleaningAppointmentService.getVisibleToCleaningStaff(currentUser.getId())) {
             dtos.add(cleaningAppointmentMapper.toDto(appointment));
         }
         ctx.json(dtos);
@@ -153,8 +153,8 @@ public class CleaningAppointmentRoutes {
         boolean ownsAsClient = hasRole(authenticatedUser, "CLEANING_CLIENT")
                 && appointment.getCleaningClient().getId().equals(currentUser.getId());
         boolean ownsAsStaff = hasRole(authenticatedUser, "CLEANING_STAFF")
-                && appointment.getCleaningStaff() != null
-                && appointment.getCleaningStaff().getId().equals(currentUser.getId());
+                && (appointment.getCleaningStaff() == null
+                || appointment.getCleaningStaff().getId().equals(currentUser.getId()));
 
         if (!ownsAsClient && !ownsAsStaff) {
             throw new ApiException(403, message);

@@ -51,6 +51,10 @@ public class CleaningAppointmentService implements CrudService<CleaningAppointme
         return cleaningAppointmentDAO.getByCleaningStaffId(cleaningStaffId);
     }
 
+    public List<CleaningAppointment> getVisibleToCleaningStaff(Long cleaningStaffId) {
+        return cleaningAppointmentDAO.getVisibleToCleaningStaff(cleaningStaffId);
+    }
+
     public List<CleaningAppointment> getByCleaningClientId(Long cleaningClientId) {
         return cleaningAppointmentDAO.getByCleaningClientId(cleaningClientId);
     }

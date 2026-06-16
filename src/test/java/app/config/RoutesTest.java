@@ -652,6 +652,51 @@ class RoutesTest {
     }
 
     @Test
+    void cleaning_staff_can_see_unassigned_appointments() {
+        String staffEmail = "cleaning.staff.unassigned." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-cleaning-staff-unassigned");
+        long cleaningStaffId = createUserId(tenantId, "Cleaning", "Staff", staffEmail);
+        long cleaningClientId = createUserId(tenantId, "Cleaning", "Client", "cleaning.client.unassigned." + System.nanoTime() + "@example.com");
+        assignCleaningStaffRole(cleaningStaffId);
+        String cleaningStaffToken = loginAndGetToken(staffEmail, "secret");
+
+        Number appointmentIdNumber = given()
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "cleaningClientId": %d,
+                          "appointmentTime": "2026-03-13T09:00:00",
+                          "cancellationTime": null,
+                          "durationMinutes": 120,
+                          "vacation": false
+                        }
+                        """.formatted(cleaningClientId))
+                .when().post("/cleaning-appointment/")
+                .then()
+                .statusCode(201)
+                .body("cleaningStaffId", nullValue())
+                .extract()
+                .path("id");
+        long appointmentId = appointmentIdNumber.longValue();
+
+        given()
+                .header("Authorization", "Bearer " + cleaningStaffToken)
+                .when().get("/cleaning-appointment/all")
+                .then()
+                .statusCode(200)
+                .body("id", hasItem((int) appointmentId));
+
+        given()
+                .header("Authorization", "Bearer " + cleaningStaffToken)
+                .when().get("/cleaning-appointment/{id}", appointmentId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) appointmentId))
+                .body("cleaningStaffId", nullValue());
+    }
+
+    @Test
     void cleaning_staff_can_update_and_delete_own_appointment() {
         String staffEmail = "cleaning.staff.update." + System.nanoTime() + "@example.com";
         long tenantId = createTenantId("tenant-cleaning-appointment-update");

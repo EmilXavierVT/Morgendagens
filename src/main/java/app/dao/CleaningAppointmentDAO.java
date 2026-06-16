@@ -93,6 +93,16 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
         }
     }
 
+    public List<CleaningAppointment> getVisibleToCleaningStaff(Long cleaningStaffId) {
+        try (EntityManager em = emf.createEntityManager()) {
+            return em.createQuery(
+                            "SELECT ca FROM CleaningAppointment ca JOIN FETCH ca.cleaningClient LEFT JOIN FETCH ca.cleaningStaff WHERE ca.cleaningStaff.id = :cleaningStaffId OR ca.cleaningStaff IS NULL ORDER BY ca.appointmentTime",
+                            CleaningAppointment.class)
+                    .setParameter("cleaningStaffId", cleaningStaffId)
+                    .getResultList();
+        }
+    }
+
     public List<CleaningAppointment> getByCleaningClientId(Long cleaningClientId) {
         try (EntityManager em = emf.createEntityManager()) {
             return em.createQuery(
