@@ -20,6 +20,8 @@ public class UserDTO {
 
     private String firstName;
     private String lastName;
+    private String streetName;
+    private String streetNumber;
     private int zipCode;
     private String email;
     private String phoneNumber;

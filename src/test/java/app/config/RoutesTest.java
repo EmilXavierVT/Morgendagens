@@ -184,6 +184,78 @@ class RoutesTest {
                 .statusCode(200);
     }
 
+    @Test
+    void change_password_updates_credentials() {
+        String email = "change.password." + System.nanoTime() + "@example.com";
+        registerUser(email, "secret");
+        String token = loginAndGetToken(email, "secret");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "currentPassword": "secret",
+                          "newPassword": "super-secret"
+                        }
+                        """)
+                .when().put("/auth/change-password")
+                .then()
+                .statusCode(200)
+                .body("msg", equalTo("Password changed successfully"));
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"email\":\"" + email + "\",\"password\":\"secret\"}")
+                .when().post("/auth/login")
+                .then()
+                .statusCode(401);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"email\":\"" + email + "\",\"password\":\"super-secret\"}")
+                .when().post("/auth/login")
+                .then()
+                .statusCode(200)
+                .body("token", notNullValue());
+    }
+
+    @Test
+    void change_password_with_wrong_current_password_returns_400() {
+        String email = "change.password.wrong." + System.nanoTime() + "@example.com";
+        registerUser(email, "secret");
+        String token = loginAndGetToken(email, "secret");
+
+        given()
+                .header("Authorization", "Bearer " + token)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "currentPassword": "incorrect",
+                          "newPassword": "super-secret"
+                        }
+                        """)
+                .when().put("/auth/change-password")
+                .then()
+                .statusCode(400)
+                .body("msg", equalTo("Current password is incorrect"));
+    }
+
+    @Test
+    void change_password_without_token_returns_401() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "currentPassword": "secret",
+                          "newPassword": "super-secret"
+                        }
+                        """)
+                .when().put("/auth/change-password")
+                .then()
+                .statusCode(401);
+    }
+
     // ─── Tenant routes ─────────────────────────────────────────────────────────
 
     @Test
@@ -209,6 +281,8 @@ class RoutesTest {
                           "tenantId": %d,
                           "firstName": "Emil",
                           "lastName": "Tester",
+                          "streetName": "Testvej",
+                          "streetNumber": "12A",
                           "zipCode": 2800,
                           "email": "emil.create.%d@example.com",
                           "password": "secret",
@@ -232,7 +306,9 @@ class RoutesTest {
                 .body("id", equalTo((int) userId))
                 .body("tenantId", equalTo((int) tenantId))
                 .body("firstName", equalTo("Emil"))
-                .body("lastName", equalTo("Tester"));
+                .body("lastName", equalTo("Tester"))
+                .body("streetName", equalTo("Testvej"))
+                .body("streetNumber", equalTo("12A"));
     }
 
     @Test
@@ -248,6 +324,8 @@ class RoutesTest {
                           "tenantId": %d,
                           "firstName": "New",
                           "lastName": "Name",
+                          "streetName": "Updated Street",
+                          "streetNumber": "44B",
                           "zipCode": 2900,
                           "email": "new.user.%d@example.com",
                           "password": "new-secret",
@@ -259,7 +337,9 @@ class RoutesTest {
                 .then()
                 .statusCode(200)
                 .body("id", equalTo((int) userId))
-                .body("firstName", equalTo("New"));
+                .body("firstName", equalTo("New"))
+                .body("streetName", equalTo("Updated Street"))
+                .body("streetNumber", equalTo("44B"));
     }
 
     @Test
@@ -815,6 +895,15 @@ class RoutesTest {
                 .path("token");
     }
 
+    private static void registerUser(String email, String password) {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}")
+                .when().post("/auth/register")
+                .then()
+                .statusCode(201);
+    }
+
     private static long createTenantId(String name) {
         Tenant tenant = Tenant.builder()
                 .name(name)
@@ -833,6 +922,8 @@ class RoutesTest {
                           "tenantId": %d,
                           "firstName": "%s",
                           "lastName": "%s",
+                          "streetName": "Helper Street",
+                          "streetNumber": "7",
                           "zipCode": 2800,
                           "email": "%s",
                           "password": "secret",

@@ -163,11 +163,11 @@ public class SecurityController implements ISecurityController{
         }
 
         // If the Authorization Header was malformed, then no entry
-        String token = header.split(" ")[1];
-        if (token == null) {
+        String[] parts = header.split(" ", 2);
+        if (parts.length != 2 || !parts[0].equalsIgnoreCase("Bearer") || parts[1].isBlank()) {
             throw new UnauthorizedResponse("Authorization header is malformed"); // UnauthorizedResponse is javalin 6 specific but response is not json!
         }
-        return token;
+        return parts[1];
     }
 
 

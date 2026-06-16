@@ -31,6 +31,8 @@ public class User implements IEntity, ISecurityUser{
 
     private String firstName;
     private String lastName;
+    private String streetName;
+    private String streetNumber;
     private int zipCode;
     @Column(unique = true)
     private String email;

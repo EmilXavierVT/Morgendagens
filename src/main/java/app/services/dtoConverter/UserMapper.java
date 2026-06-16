@@ -35,6 +35,8 @@ public class UserMapper {
         dto.setRoles(user.getRolesAsStrings());
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
+        dto.setStreetName(user.getStreetName());
+        dto.setStreetNumber(user.getStreetNumber());
         dto.setZipCode(user.getZipCode());
         dto.setEmail(user.getEmail());
         dto.setPassword(user.getPassword());
@@ -61,6 +63,8 @@ public class UserMapper {
         user.setId(dto.getId());
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
+        user.setStreetName(dto.getStreetName());
+        user.setStreetNumber(dto.getStreetNumber());
         user.setZipCode(dto.getZipCode());
         user.setEmail(dto.getEmail());
         String rawPassword = dto.getPassword();
