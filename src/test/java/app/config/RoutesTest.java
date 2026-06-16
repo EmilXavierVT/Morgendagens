@@ -807,7 +807,7 @@ class RoutesTest {
         assignCleaningClientRole(cleaningClientId);
         String cleaningClientToken = loginAndGetToken(clientEmail, "secret");
 
-        given()
+        String response = given()
                 .header("Authorization", "Bearer " + cleaningClientToken)
                 .contentType(ContentType.JSON)
                 .body("""
@@ -824,7 +824,11 @@ class RoutesTest {
                 .statusCode(201)
                 .body("cleaningClientId", equalTo((int) cleaningClientId))
                 .body("cancellationTime", nullValue())
-                .body("cleaningStaffId", nullValue());
+                .body("cleaningStaffId", nullValue())
+                .extract()
+                .asString();
+
+        org.hamcrest.MatcherAssert.assertThat(response, containsString("\"cleaningStaffId\":null"));
     }
 
     @Test
