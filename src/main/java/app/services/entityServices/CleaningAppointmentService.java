@@ -68,13 +68,16 @@ public class CleaningAppointmentService implements CrudService<CleaningAppointme
         if (appointment.getCleaningClient() == null || appointment.getCleaningClient().getId() == null) {
             throw new ApiException(400, "cleaningClientId is required");
         }
-        if (appointment.getCleaningStaff() == null || appointment.getCleaningStaff().getId() == null) {
-            throw new ApiException(400, "cleaningStaffId is required");
-        }
-
         User client = userDAO.getByIdWithRoles(appointment.getCleaningClient().getId());
         if (client == null) {
             throw new ApiException(404, "Cleaning client not found");
+        }
+
+        appointment.setCleaningClient(client);
+
+        if (appointment.getCleaningStaff() == null || appointment.getCleaningStaff().getId() == null) {
+            appointment.setCleaningStaff(null);
+            return;
         }
 
         User staff = userDAO.getByIdWithRoles(appointment.getCleaningStaff().getId());
@@ -85,7 +88,6 @@ public class CleaningAppointmentService implements CrudService<CleaningAppointme
             throw new ApiException(400, "User must have CLEANING_STAFF role");
         }
 
-        appointment.setCleaningClient(client);
         appointment.setCleaningStaff(staff);
     }
 }

@@ -33,7 +33,7 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
     public CleaningAppointment getById(Long id) {
         try (EntityManager em = emf.createEntityManager()) {
             return em.createQuery(
-                            "SELECT ca FROM CleaningAppointment ca JOIN FETCH ca.cleaningClient JOIN FETCH ca.cleaningStaff WHERE ca.id = :id",
+                            "SELECT ca FROM CleaningAppointment ca JOIN FETCH ca.cleaningClient LEFT JOIN FETCH ca.cleaningStaff WHERE ca.id = :id",
                             CleaningAppointment.class)
                     .setParameter("id", id)
                     .getSingleResult();
@@ -77,7 +77,7 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
     public Set<CleaningAppointment> getAll() {
         try (EntityManager em = emf.createEntityManager()) {
             return new HashSet<>(em.createQuery(
-                    "SELECT ca FROM CleaningAppointment ca JOIN FETCH ca.cleaningClient JOIN FETCH ca.cleaningStaff ORDER BY ca.appointmentTime",
+                    "SELECT ca FROM CleaningAppointment ca JOIN FETCH ca.cleaningClient LEFT JOIN FETCH ca.cleaningStaff ORDER BY ca.appointmentTime",
                     CleaningAppointment.class
             ).getResultList());
         }
@@ -96,7 +96,7 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
     public List<CleaningAppointment> getByCleaningClientId(Long cleaningClientId) {
         try (EntityManager em = emf.createEntityManager()) {
             return em.createQuery(
-                            "SELECT ca FROM CleaningAppointment ca JOIN FETCH ca.cleaningClient JOIN FETCH ca.cleaningStaff WHERE ca.cleaningClient.id = :cleaningClientId ORDER BY ca.appointmentTime",
+                            "SELECT ca FROM CleaningAppointment ca JOIN FETCH ca.cleaningClient LEFT JOIN FETCH ca.cleaningStaff WHERE ca.cleaningClient.id = :cleaningClientId ORDER BY ca.appointmentTime",
                             CleaningAppointment.class)
                     .setParameter("cleaningClientId", cleaningClientId)
                     .getResultList();
@@ -109,14 +109,17 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
             throw new IllegalArgumentException("CleaningAppointment must reference a cleaning client");
         }
 
-        User staff = appointment.getCleaningStaff();
-        if (staff == null || staff.getId() == null) {
-            throw new IllegalArgumentException("CleaningAppointment must reference a cleaning staff user");
-        }
-
         User managedClient = em.find(User.class, client.getId());
         if (managedClient == null) {
             throw new IllegalArgumentException("User with id " + client.getId() + " does not exist");
+        }
+
+        appointment.setCleaningClient(managedClient);
+
+        User staff = appointment.getCleaningStaff();
+        if (staff == null || staff.getId() == null) {
+            appointment.setCleaningStaff(null);
+            return;
         }
 
         User managedStaff = em.find(User.class, staff.getId());
@@ -124,7 +127,6 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
             throw new IllegalArgumentException("User with id " + staff.getId() + " does not exist");
         }
 
-        appointment.setCleaningClient(managedClient);
         appointment.setCleaningStaff(managedStaff);
     }
 }

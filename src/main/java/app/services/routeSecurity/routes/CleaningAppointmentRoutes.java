@@ -127,9 +127,6 @@ public class CleaningAppointmentRoutes {
                 throw new ApiException(403, "Cleaning clients can only create appointments for themselves");
             }
 
-            if (dto.getCleaningStaffId() == null) {
-                throw new ApiException(400, "cleaningStaffId is required");
-            }
             return;
         }
 
@@ -156,6 +153,7 @@ public class CleaningAppointmentRoutes {
         boolean ownsAsClient = hasRole(authenticatedUser, "CLEANING_CLIENT")
                 && appointment.getCleaningClient().getId().equals(currentUser.getId());
         boolean ownsAsStaff = hasRole(authenticatedUser, "CLEANING_STAFF")
+                && appointment.getCleaningStaff() != null
                 && appointment.getCleaningStaff().getId().equals(currentUser.getId());
 
         if (!ownsAsClient && !ownsAsStaff) {

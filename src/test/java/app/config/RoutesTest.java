@@ -711,6 +711,32 @@ class RoutesTest {
     }
 
     @Test
+    void cleaning_client_can_create_appointment_without_staff() {
+        String clientEmail = "cleaning.client.unassigned." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-cleaning-client-unassigned");
+        long cleaningClientId = createUserId(tenantId, "Cleaning", "Client", clientEmail);
+        assignCleaningClientRole(cleaningClientId);
+        String cleaningClientToken = loginAndGetToken(clientEmail, "secret");
+
+        given()
+                .header("Authorization", "Bearer " + cleaningClientToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "cleaningClientId": %d,
+                          "appointmentTime": "2026-03-13T09:00:00",
+                          "durationMinutes": 120,
+                          "vacation": false
+                        }
+                        """.formatted(cleaningClientId))
+                .when().post("/cleaning-appointment/")
+                .then()
+                .statusCode(201)
+                .body("cleaningClientId", equalTo((int) cleaningClientId))
+                .body("cleaningStaffId", nullValue());
+    }
+
+    @Test
     void cleaning_client_can_read_update_and_delete_own_appointment() {
         String clientEmail = "cleaning.client.crud." + System.nanoTime() + "@example.com";
         long tenantId = createTenantId("tenant-cleaning-client-crud");

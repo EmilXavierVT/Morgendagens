@@ -23,7 +23,7 @@ public class CleaningAppointment implements IEntity {
     @ToString.Exclude
     private User cleaningClient;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = true)
     @JoinColumn(name = "cleaning_staff_id")
     @ToString.Exclude
     private User cleaningStaff;
