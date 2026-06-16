@@ -16,6 +16,7 @@ public class CleaningAppointmentDTO {
     private Long cleaningClientId;
     private Long cleaningStaffId;
     private LocalDateTime appointmentTime;
+    private LocalDateTime cancellationTime;
     private int durationMinutes;
     private boolean vacation;
 }

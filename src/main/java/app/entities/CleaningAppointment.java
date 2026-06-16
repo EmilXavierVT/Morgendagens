@@ -30,6 +30,8 @@ public class CleaningAppointment implements IEntity {
 
     private LocalDateTime appointmentTime;
 
+    private LocalDateTime cancellationTime;
+
     private int durationMinutes;
 
     private boolean vacation;

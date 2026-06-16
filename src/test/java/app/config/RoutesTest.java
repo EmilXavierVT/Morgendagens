@@ -540,6 +540,7 @@ class RoutesTest {
                           "cleaningClientId": %d,
                           "cleaningStaffId": %d,
                           "appointmentTime": "2026-03-13T09:00:00",
+                          "cancellationTime": null,
                           "durationMinutes": 90,
                           "vacation": false
                         }
@@ -551,6 +552,7 @@ class RoutesTest {
                 .body("cleaningClientId", equalTo((int) cleaningClientId))
                 .body("cleaningStaffId", equalTo((int) cleaningStaffId))
                 .body("appointmentTime", equalTo("2026-03-13T09:00:00"))
+                .body("cancellationTime", nullValue())
                 .body("durationMinutes", equalTo(90))
                 .body("vacation", equalTo(false))
                 .extract()
@@ -565,6 +567,7 @@ class RoutesTest {
                 .body("id", equalTo((int) appointmentId))
                 .body("cleaningClientId", equalTo((int) cleaningClientId))
                 .body("cleaningStaffId", equalTo((int) cleaningStaffId))
+                .body("cancellationTime", nullValue())
                 .body("vacation", equalTo(false));
     }
 
@@ -586,6 +589,7 @@ class RoutesTest {
                           "cleaningClientId": %d,
                           "cleaningStaffId": %d,
                           "appointmentTime": "2026-03-14T10:30:00",
+                          "cancellationTime": "2026-03-14T08:00:00",
                           "durationMinutes": 120,
                           "vacation": true
                         }
@@ -595,6 +599,7 @@ class RoutesTest {
                 .statusCode(200)
                 .body("id", equalTo((int) appointmentId))
                 .body("appointmentTime", equalTo("2026-03-14T10:30:00"))
+                .body("cancellationTime", equalTo("2026-03-14T08:00:00"))
                 .body("durationMinutes", equalTo(120))
                 .body("vacation", equalTo(true));
 
@@ -650,6 +655,7 @@ class RoutesTest {
                           "cleaningClientId": %d,
                           "cleaningStaffId": %d,
                           "appointmentTime": "2026-03-13T09:00:00",
+                          "cancellationTime": null,
                           "durationMinutes": 90,
                           "vacation": true
                         }
@@ -672,6 +678,7 @@ class RoutesTest {
                         {
                           "cleaningClientId": %d,
                           "appointmentTime": "2026-03-13T09:00:00",
+                          "cancellationTime": null,
                           "durationMinutes": 90,
                           "vacation": false
                         }
@@ -699,6 +706,7 @@ class RoutesTest {
                           "cleaningClientId": %d,
                           "cleaningStaffId": %d,
                           "appointmentTime": "2026-03-13T09:00:00",
+                          "cancellationTime": null,
                           "durationMinutes": 120,
                           "vacation": false
                         }
@@ -707,7 +715,8 @@ class RoutesTest {
                 .then()
                 .statusCode(201)
                 .body("cleaningClientId", equalTo((int) cleaningClientId))
-                .body("cleaningStaffId", equalTo((int) cleaningStaffId));
+                .body("cleaningStaffId", equalTo((int) cleaningStaffId))
+                .body("cancellationTime", nullValue());
     }
 
     @Test
@@ -725,6 +734,7 @@ class RoutesTest {
                         {
                           "cleaningClientId": %d,
                           "appointmentTime": "2026-03-13T09:00:00",
+                          "cancellationTime": null,
                           "durationMinutes": 120,
                           "vacation": false
                         }
@@ -733,6 +743,7 @@ class RoutesTest {
                 .then()
                 .statusCode(201)
                 .body("cleaningClientId", equalTo((int) cleaningClientId))
+                .body("cancellationTime", nullValue())
                 .body("cleaningStaffId", nullValue());
     }
 
@@ -771,6 +782,7 @@ class RoutesTest {
                           "cleaningClientId": %d,
                           "cleaningStaffId": %d,
                           "appointmentTime": "2026-03-14T11:00:00",
+                          "cancellationTime": "2026-03-14T08:30:00",
                           "durationMinutes": 60,
                           "vacation": true
                         }
@@ -779,6 +791,7 @@ class RoutesTest {
                 .then()
                 .statusCode(200)
                 .body("appointmentTime", equalTo("2026-03-14T11:00:00"))
+                .body("cancellationTime", equalTo("2026-03-14T08:30:00"))
                 .body("durationMinutes", equalTo(60))
                 .body("vacation", equalTo(true));
 
@@ -910,6 +923,7 @@ class RoutesTest {
                           "cleaningClientId": %d,
                           "cleaningStaffId": %d,
                           "appointmentTime": "2026-03-13T09:00:00",
+                          "cancellationTime": null,
                           "durationMinutes": 90,
                           "vacation": %s
                         }
