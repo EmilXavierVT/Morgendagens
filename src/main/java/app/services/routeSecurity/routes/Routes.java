@@ -122,11 +122,11 @@ public class Routes {
             });
 
             path("/subscription-deal", () -> {
-                get("/all", subscriptionDealRoutes::getAll, Role.ADMIN, Role.SUBSCRIBER);
-                post("/", subscriptionDealRoutes::create, Role.ADMIN, Role.SUBSCRIBER);
-                get("/{id}", subscriptionDealRoutes::getById, Role.ADMIN, Role.SUBSCRIBER);
-                put("/{id}", subscriptionDealRoutes::update, Role.ADMIN, Role.SUBSCRIBER);
-                delete("/{id}", subscriptionDealRoutes::delete, Role.ADMIN, Role.SUBSCRIBER);
+                get("/all", subscriptionDealRoutes::getAll, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF);
+                post("/", subscriptionDealRoutes::create, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF);
+                get("/{id}", subscriptionDealRoutes::getById, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF);
+                put("/{id}", subscriptionDealRoutes::update, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF);
+                delete("/{id}", subscriptionDealRoutes::delete, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF);
             });
         };
     }
