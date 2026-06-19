@@ -30,7 +30,7 @@ public class SubscriptionDealRoutes {
         UserDTO authenticatedUser = ctx.attribute("user");
         List<SubscriptionDealDTO> dtos = new ArrayList<>();
 
-        if (isAdmin(authenticatedUser)) {
+        if (hasFullAccess(authenticatedUser)) {
             for (SubscriptionDeal subscriptionDeal : subscriptionDealService.getAll()) {
                 dtos.add(subscriptionDealMapper.toDto(subscriptionDeal));
             }
@@ -103,7 +103,7 @@ public class SubscriptionDealRoutes {
             throw new ApiException(401, "Not authenticated");
         }
 
-        if (isAdmin(authenticatedUser)) {
+        if (hasFullAccess(authenticatedUser)) {
             return;
         }
 
@@ -119,7 +119,7 @@ public class SubscriptionDealRoutes {
     }
 
     private void ensureOwnership(SubscriptionDeal subscriptionDeal, UserDTO authenticatedUser) {
-        if (isAdmin(authenticatedUser)) {
+        if (hasFullAccess(authenticatedUser)) {
             return;
         }
 
@@ -129,8 +129,8 @@ public class SubscriptionDealRoutes {
         }
     }
 
-    private boolean isAdmin(UserDTO authenticatedUser) {
-        return hasRole(authenticatedUser, "ADMIN");
+    private boolean hasFullAccess(UserDTO authenticatedUser) {
+        return hasRole(authenticatedUser, "ADMIN") || hasRole(authenticatedUser, "CLEANING_STAFF");
     }
 
     private boolean hasRole(UserDTO authenticatedUser, String roleName) {

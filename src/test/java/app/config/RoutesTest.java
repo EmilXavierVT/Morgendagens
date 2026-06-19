@@ -398,6 +398,20 @@ class RoutesTest {
                 .body("roles", hasItems("SUBSCRIBER"));
     }
 
+    @Test
+    void set_flex_adds_flex_role_to_user() {
+        long tenantId = createTenantId("tenant-user-flex");
+        long userId = createUserId(tenantId, "Flex", "Candidate", "flex.role." + System.nanoTime() + "@example.com");
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().put("/user/{id}/flex", userId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) userId))
+                .body("roles", hasItems("FLEX"));
+    }
+
     // ─── Request routes ────────────────────────────────────────────────────────
 
     @Test
@@ -1071,6 +1085,48 @@ class RoutesTest {
                 .when().put("/subscription-deal/{id}", subscriptionDealId)
                 .then()
                 .statusCode(403);
+    }
+
+    @Test
+    void cleaning_staff_can_manage_any_subscription_deal() {
+        String cleaningStaffEmail = "subscription.staff." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-subscription-deal-staff");
+        long cleaningStaffId = createUserId(tenantId, "Subscription", "Staff", cleaningStaffEmail);
+        long subscriberId = createUserId(tenantId, "Subscription", "Client", "subscription.staff.target." + System.nanoTime() + "@example.com");
+        assignCleaningStaffRole(cleaningStaffId);
+        assignCleaningClientRole(subscriberId);
+        assignSubscriberRole(subscriberId);
+        String cleaningStaffToken = loginAndGetToken(cleaningStaffEmail, "secret");
+
+        long subscriptionDealId = createSubscriptionDealId(subscriberId, 3);
+
+        given()
+                .header("Authorization", "Bearer " + cleaningStaffToken)
+                .when().get("/subscription-deal/{id}", subscriptionDealId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) subscriptionDealId))
+                .body("userId", equalTo((int) subscriberId));
+
+        given()
+                .header("Authorization", "Bearer " + cleaningStaffToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "userId": %d,
+                          "visitsPerMonth": 7
+                        }
+                        """.formatted(subscriberId))
+                .when().put("/subscription-deal/{id}", subscriptionDealId)
+                .then()
+                .statusCode(200)
+                .body("visitsPerMonth", equalTo(7));
+
+        given()
+                .header("Authorization", "Bearer " + cleaningStaffToken)
+                .when().delete("/subscription-deal/{id}", subscriptionDealId)
+                .then()
+                .statusCode(204);
     }
 
     @Test

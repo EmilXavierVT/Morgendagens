@@ -103,4 +103,10 @@ public class UserRoutes {
         User user = userService.setSubscriber(id);
         ctx.json(userMapper.toDto(user));
     }
+
+    public void setFlex(Context ctx) {
+        Long id = ctx.pathParamAsClass("id", Long.class).get();
+        User user = userService.setFlex(id);
+        ctx.json(userMapper.toDto(user));
+    }
 }
