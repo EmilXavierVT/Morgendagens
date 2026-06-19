@@ -17,5 +17,6 @@ final class EntityRegistry {
         configuration.addAnnotatedClass(Role.class);
         configuration.addAnnotatedClass(WorkLog.class);
         configuration.addAnnotatedClass(CleaningAppointment.class);
+        configuration.addAnnotatedClass(SubscriptionDeal.class);
     }
 }

@@ -38,6 +38,7 @@ public class Routes {
         MessageRoutes messageRoutes = new MessageRoutes(emf);
         WorkLogRoutes workLogRoutes = new WorkLogRoutes(emf);
         CleaningAppointmentRoutes cleaningAppointmentRoutes = new CleaningAppointmentRoutes(emf);
+        SubscriptionDealRoutes subscriptionDealRoutes = new SubscriptionDealRoutes(emf);
         EmailRoutes emailRoutes = new EmailRoutes();
         SystemController systemController = new SystemController();
 
@@ -63,6 +64,7 @@ public class Routes {
                 put("/{id}/employee", userRoutes::setEmployee, Role.ADMIN);
                 put("/{id}/cleaning-staff", userRoutes::setCleaningStaff, Role.ADMIN);
                 put("/{id}/cleaning-client", userRoutes::setCleaningClient, Role.ADMIN);
+                put("/{id}/subscriber", userRoutes::setSubscriber, Role.ADMIN);
             });
 
             path("/product", () -> {
@@ -118,6 +120,14 @@ public class Routes {
             path("/email", () -> {
                 post("/send", emailRoutes::send, Role.USER, Role.ADMIN);
             });
+
+            path("/subscription-deal", () -> {
+                get("/all", subscriptionDealRoutes::getAll, Role.ADMIN, Role.SUBSCRIBER);
+                post("/", subscriptionDealRoutes::create, Role.ADMIN, Role.SUBSCRIBER);
+                get("/{id}", subscriptionDealRoutes::getById, Role.ADMIN, Role.SUBSCRIBER);
+                put("/{id}", subscriptionDealRoutes::update, Role.ADMIN, Role.SUBSCRIBER);
+                delete("/{id}", subscriptionDealRoutes::delete, Role.ADMIN, Role.SUBSCRIBER);
+            });
         };
     }
 
@@ -135,7 +145,7 @@ public class Routes {
                 on.put("msg","HELLO FROM THHE RESTRICTED AREA");
                 post("register", securityController::register );
                 post("login", securityController::login );
-                put("change-password", securityController::changePassword, Role.USER, Role.ADMIN, Role.EMPLOYEE, Role.CLEANING_STAFF, Role.CLEANING_CLIENT);
+                put("change-password", securityController::changePassword, Role.USER, Role.ADMIN, Role.EMPLOYEE, Role.CLEANING_STAFF, Role.CLEANING_CLIENT, Role.SUBSCRIBER);
                 get("protected",ctx->ctx.json(on).status(200),Role.USER);
             });
             default -> throw new IllegalArgumentException("Unknown resource name: " + resourceName);
@@ -143,7 +153,7 @@ public class Routes {
     }
 
     public enum Role implements RouteRole {
-        ANYONE,USER,ADMIN,EMPLOYEE,CLEANING_STAFF,CLEANING_CLIENT
+        ANYONE,USER,ADMIN,EMPLOYEE,CLEANING_STAFF,CLEANING_CLIENT,SUBSCRIBER
     }
 
 }

@@ -36,6 +36,7 @@ class EntityMapperIntegrationTest {
     private static RequestService requestService;
     private static MessageService messageService;
     private static ProductInRequestService pirService;
+    private static SubscriptionDealService subscriptionDealService;
 
     private static UserMapper userMapper;
     private static TenantMapper tenantMapper;
@@ -43,6 +44,7 @@ class EntityMapperIntegrationTest {
     private static RequestMapper requestMapper;
     private static MessageMapper messageMapper;
     private static ProductInRequestMapper pirMapper;
+    private static SubscriptionDealMapper subscriptionDealMapper;
 
     private static ObjectMapper objectMapper;
 
@@ -62,6 +64,7 @@ class EntityMapperIntegrationTest {
         requestService = new RequestService(emf);
         messageService = new MessageService(emf);
         pirService = new ProductInRequestService(emf);
+        subscriptionDealService = new SubscriptionDealService(emf);
 
         userMapper = new UserMapper(emf);
         tenantMapper = new TenantMapper(emf);
@@ -69,6 +72,7 @@ class EntityMapperIntegrationTest {
         requestMapper = new RequestMapper(emf);
         messageMapper = new MessageMapper(emf);
         pirMapper = new ProductInRequestMapper(emf);
+        subscriptionDealMapper = new SubscriptionDealMapper();
 
         objectMapper = ObjectMapperService.getMapper();
     }
@@ -133,5 +137,33 @@ class EntityMapperIntegrationTest {
         assertEquals(tenant.getId(), reqEntity.getTenant().getId());
         assertEquals(LocalDateTime.of(2026, 3, 13, 10, 15, 30), reqEntity.getStartDate());
         assertEquals("Copenhagen", reqEntity.getLocation());
+    }
+
+    @Test
+    void subscription_deal_mapper_roundtrip() {
+        Tenant tenant = Tenant.builder().name("subscription-tenant").type("x").status(1).build();
+        tenantService.create(tenant);
+
+        User user = new User("subscription.mapper@example.com", "pw");
+        user.setTenant(tenant);
+        userService.create(user);
+        userService.setCleaningClient(user.getId());
+        userService.setSubscriber(user.getId());
+        user = userService.getByEmail(user.getEmail());
+
+        SubscriptionDeal subscriptionDeal = SubscriptionDeal.builder()
+                .user(user)
+                .visitsPerMonth(3)
+                .build();
+        subscriptionDealService.create(subscriptionDeal);
+
+        SubscriptionDealDTO dto = subscriptionDealMapper.toDto(subscriptionDeal);
+        assertEquals(subscriptionDeal.getUser().getId(), dto.getUserId());
+        assertEquals(3, dto.getVisitsPerMonth());
+
+        SubscriptionDeal reconstructed = subscriptionDealMapper.fromDto(dto);
+        assertNotNull(reconstructed.getUser());
+        assertEquals(subscriptionDeal.getUser().getId(), reconstructed.getUser().getId());
+        assertEquals(3, reconstructed.getVisitsPerMonth());
     }
 }

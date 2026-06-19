@@ -59,6 +59,12 @@ public class UserService implements CrudService<User> {
         return userDAO.addUserRole(user.getEmail(), "CLEANING_CLIENT");
     }
 
+    public User setSubscriber(Long id) {
+        User user = userDAO.getById(id);
+        if (user == null) throw new ApiException(404, "User not found");
+        return userDAO.addUserRole(user.getEmail(), "SUBSCRIBER");
+    }
+
     public User getByEmail(String email) {
         return userDAO.getByEmailWithRoles(email);
     }

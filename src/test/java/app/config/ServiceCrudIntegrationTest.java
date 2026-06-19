@@ -33,6 +33,7 @@ class ServiceCrudIntegrationTest {
     private static RequestService requestService;
     private static MessageService messageService;
     private static ProductInRequestService productInRequestService;
+    private static SubscriptionDealService subscriptionDealService;
 
     @BeforeAll
     static void setup() {
@@ -49,6 +50,7 @@ class ServiceCrudIntegrationTest {
         requestService = new RequestService(emf);
         messageService = new MessageService(emf);
         productInRequestService = new ProductInRequestService(emf);
+        subscriptionDealService = new SubscriptionDealService(emf);
     }
 
     @AfterAll
@@ -75,7 +77,17 @@ class ServiceCrudIntegrationTest {
         user.setZipCode(9999);
         user.setTenant(tenant);
         userService.create(user);
+        userService.setCleaningClient(user.getId());
+        userService.setSubscriber(user.getId());
+        user = userService.getById(user.getId());
         assertNotNull(user.getId());
+
+        SubscriptionDeal subscriptionDeal = SubscriptionDeal.builder()
+                .user(user)
+                .visitsPerMonth(4)
+                .build();
+        subscriptionDealService.create(subscriptionDeal);
+        assertNotNull(subscriptionDeal.getId());
 
         Product product = Product.builder()
                 .name("Coffee")
@@ -120,6 +132,7 @@ class ServiceCrudIntegrationTest {
         assertNotNull(requestService.getById(request.getId()));
         assertNotNull(productInRequestService.getById(productInRequest.getId()));
         assertNotNull(messageService.getById(message.getId()));
+        assertNotNull(subscriptionDealService.getById(subscriptionDeal.getId()));
 
         tenant.setName("tenant-updated");
         tenantService.update(tenant);
@@ -152,15 +165,21 @@ class ServiceCrudIntegrationTest {
         messageService.update(message);
         assertEquals("Updated message", messageService.getById(message.getId()).getContext());
 
+        subscriptionDeal.setVisitsPerMonth(6);
+        subscriptionDealService.update(subscriptionDeal);
+        assertEquals(6, subscriptionDealService.getById(subscriptionDeal.getId()).getVisitsPerMonth());
+
         assertFalse(userService.getAll().isEmpty());
         assertFalse(tenantService.getAll().isEmpty());
         assertFalse(productService.getAll().isEmpty());
         assertFalse(requestService.getAll().isEmpty());
         assertFalse(productInRequestService.getAll().isEmpty());
         assertFalse(messageService.getAll().isEmpty());
+        assertFalse(subscriptionDealService.getAll().isEmpty());
 
         assertNotNull(productInRequestService.delete(productInRequest.getId()));
         assertNotNull(messageService.delete(message.getId()));
+        assertNotNull(subscriptionDealService.delete(subscriptionDeal.getId()));
         assertNotNull(userService.delete(user.getId()));
         assertNotNull(requestService.delete(request.getId()));
         assertNotNull(productService.delete(product.getId()));
@@ -168,6 +187,7 @@ class ServiceCrudIntegrationTest {
 
         assertNull(productInRequestService.getById(productInRequest.getId()));
         assertNull(messageService.getById(message.getId()));
+        assertNull(subscriptionDealService.getById(subscriptionDeal.getId()));
         assertNull(userService.getById(user.getId()));
         assertNull(requestService.getById(request.getId()));
         assertNull(productService.getById(product.getId()));

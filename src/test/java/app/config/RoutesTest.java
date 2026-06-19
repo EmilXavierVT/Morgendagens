@@ -384,6 +384,20 @@ class RoutesTest {
                 .body("roles", hasItems("CLEANING_CLIENT"));
     }
 
+    @Test
+    void set_subscriber_adds_subscriber_role_to_user() {
+        long tenantId = createTenantId("tenant-user-subscriber");
+        long userId = createUserId(tenantId, "Subscriber", "Candidate", "subscriber.role." + System.nanoTime() + "@example.com");
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().put("/user/{id}/subscriber", userId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) userId))
+                .body("roles", hasItems("SUBSCRIBER"));
+    }
+
     // ─── Request routes ────────────────────────────────────────────────────────
 
     @Test
@@ -931,6 +945,156 @@ class RoutesTest {
                 .statusCode(204);
     }
 
+    @Test
+    void admin_can_create_and_get_subscription_deal() {
+        long tenantId = createTenantId("tenant-subscription-deal-admin");
+        long userId = createUserId(tenantId, "Subscriber", "Client", "subscription.admin." + System.nanoTime() + "@example.com");
+        assignCleaningClientRole(userId);
+        assignSubscriberRole(userId);
+
+        Number subscriptionDealIdNumber = given()
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "userId": %d,
+                          "visitsPerMonth": 4
+                        }
+                        """.formatted(userId))
+                .when().post("/subscription-deal/")
+                .then()
+                .statusCode(201)
+                .body("id", notNullValue())
+                .body("userId", equalTo((int) userId))
+                .body("visitsPerMonth", equalTo(4))
+                .extract()
+                .path("id");
+        long subscriptionDealId = subscriptionDealIdNumber.longValue();
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().get("/subscription-deal/{id}", subscriptionDealId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) subscriptionDealId))
+                .body("userId", equalTo((int) userId))
+                .body("visitsPerMonth", equalTo(4));
+    }
+
+    @Test
+    void subscriber_can_crud_own_subscription_deal_only() {
+        String subscriberEmail = "subscription.self." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-subscription-deal-self");
+        long subscriberId = createUserId(tenantId, "Subscription", "Owner", subscriberEmail);
+        assignCleaningClientRole(subscriberId);
+        assignSubscriberRole(subscriberId);
+        String subscriberToken = loginAndGetToken(subscriberEmail, "secret");
+
+        Number subscriptionDealIdNumber = given()
+                .header("Authorization", "Bearer " + subscriberToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "visitsPerMonth": 2
+                        }
+                        """)
+                .when().post("/subscription-deal/")
+                .then()
+                .statusCode(201)
+                .body("id", notNullValue())
+                .body("userId", equalTo((int) subscriberId))
+                .body("visitsPerMonth", equalTo(2))
+                .extract()
+                .path("id");
+        long subscriptionDealId = subscriptionDealIdNumber.longValue();
+
+        given()
+                .header("Authorization", "Bearer " + subscriberToken)
+                .when().get("/subscription-deal/all")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(1))
+                .body("[0].id", equalTo((int) subscriptionDealId))
+                .body("[0].userId", equalTo((int) subscriberId));
+
+        given()
+                .header("Authorization", "Bearer " + subscriberToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "userId": %d,
+                          "visitsPerMonth": 5
+                        }
+                        """.formatted(subscriberId))
+                .when().put("/subscription-deal/{id}", subscriptionDealId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) subscriptionDealId))
+                .body("visitsPerMonth", equalTo(5));
+
+        given()
+                .header("Authorization", "Bearer " + subscriberToken)
+                .when().delete("/subscription-deal/{id}", subscriptionDealId)
+                .then()
+                .statusCode(204);
+    }
+
+    @Test
+    void subscriber_cannot_manage_other_users_subscription_deal() {
+        String subscriberEmail = "subscription.blocked." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-subscription-deal-blocked");
+        long subscriberId = createUserId(tenantId, "Subscription", "Blocked", subscriberEmail);
+        long otherSubscriberId = createUserId(tenantId, "Subscription", "Other", "subscription.other." + System.nanoTime() + "@example.com");
+        assignCleaningClientRole(subscriberId);
+        assignSubscriberRole(subscriberId);
+        assignCleaningClientRole(otherSubscriberId);
+        assignSubscriberRole(otherSubscriberId);
+        String subscriberToken = loginAndGetToken(subscriberEmail, "secret");
+
+        long subscriptionDealId = createSubscriptionDealId(otherSubscriberId, 3);
+
+        given()
+                .header("Authorization", "Bearer " + subscriberToken)
+                .when().get("/subscription-deal/{id}", subscriptionDealId)
+                .then()
+                .statusCode(403);
+
+        given()
+                .header("Authorization", "Bearer " + subscriberToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "userId": %d,
+                          "visitsPerMonth": 6
+                        }
+                        """.formatted(otherSubscriberId))
+                .when().put("/subscription-deal/{id}", subscriptionDealId)
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    void subscription_deal_requires_subscriber_and_cleaning_client_roles() {
+        String subscriberOnlyEmail = "subscription.invalid." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-subscription-deal-role-validation");
+        long userId = createUserId(tenantId, "Subscription", "Invalid", subscriberOnlyEmail);
+        assignSubscriberRole(userId);
+        String subscriberToken = loginAndGetToken(subscriberOnlyEmail, "secret");
+
+        given()
+                .header("Authorization", "Bearer " + subscriberToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "visitsPerMonth": 2
+                        }
+                        """)
+                .when().post("/subscription-deal/")
+                .then()
+                .statusCode(400)
+                .body("msg", equalTo("User must have both SUBSCRIBER and CLEANING_CLIENT roles"));
+    }
+
     // ─── Helpers ───────────────────────────────────────────────────────────────
 
     private static String loginAndGetToken(String email, String password) {
@@ -1012,6 +1176,14 @@ class RoutesTest {
                 .statusCode(200);
     }
 
+    private static void assignSubscriberRole(long userId) {
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().put("/user/{id}/subscriber", userId)
+                .then()
+                .statusCode(200);
+    }
+
     private static long createRequestId(long tenantId, int status, int type) {
         Number requestId = given()
                 .header("Authorization", "Bearer " + adminToken)
@@ -1074,5 +1246,23 @@ class RoutesTest {
                 .extract()
                 .path("id");
         return appointmentId.longValue();
+    }
+
+    private static long createSubscriptionDealId(long userId, int visitsPerMonth) {
+        Number subscriptionDealId = given()
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "userId": %d,
+                          "visitsPerMonth": %d
+                        }
+                        """.formatted(userId, visitsPerMonth))
+                .when().post("/subscription-deal/")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+        return subscriptionDealId.longValue();
     }
 }
