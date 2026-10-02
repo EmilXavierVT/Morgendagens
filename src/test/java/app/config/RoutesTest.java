@@ -367,7 +367,7 @@ class RoutesTest {
                 .then()
                 .statusCode(200)
                 .body("id", equalTo((int) userId))
-                .body("roles", hasItems("CLEANING_STAFF"));
+                .body("roles", hasItems("EMPLOYEE", "CLEANING_STAFF"));
     }
 
     @Test
