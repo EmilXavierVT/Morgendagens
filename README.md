@@ -33,7 +33,7 @@ A multi-tenant request management platform built with Java and Javalin. Morgenda
 
 - **Multi-tenancy** — Users are isolated within tenants; each registration auto-creates a tenant
 - **Request management** — Full lifecycle management of service requests with time slots, locations, allergies, and product line items
-- **Product catalog** — Admins manage a shared product catalog with pricing and categorization
+- **e-conomic catalog** — Products and customers are read live from the connected e-conomic agreement
 - **Weather integration** — Requests are enriched with hourly and daily weather forecasts for their location
 - **Messaging** — Threaded in-platform messaging between users
 - **JWT authentication** — Stateless token-based auth with configurable expiration
@@ -127,11 +127,15 @@ CREATE DATABASE morgendagens;
 Create or edit `src/main/resources/config.properties`:
 ```properties
 DB_NAME=morgendagens
+DB_HOST=localhost
+DB_PORT=5432
 DB_USERNAME=username
 DB_PASSWORD=password
 ISSUER=morgendagens
 TOKEN_EXPIRE_TIME=3600000
 SECRET_KEY=morgendagens-very-secret-key-256bit!!
+ECONOMIC_APP_SECRET_TOKEN=your-e-conomic-app-secret-token
+ECONOMIC_AGREEMENT_GRANT_TOKEN=your-e-conomic-agreement-grant-token
 ```
 
 **4. Build and run:**
@@ -174,6 +178,8 @@ The application switches between development and production mode based on the pr
 | Variable | Description | Dev default |
 |---|---|---|
 | `DB_NAME` | Database name | `morgendagens` |
+| `DB_HOST` | Development database host | `localhost` |
+| `DB_PORT` | Development database port | `5432` |
 | `DB_USERNAME` | Database user | `postgres` |
 | `DB_PASSWORD` | Database password | `postgres` |
 | `CONNECTION_STR` | JDBC URL prefix (production only) | — |
@@ -182,8 +188,15 @@ The application switches between development and production mode based on the pr
 | `ISSUER` | JWT issuer claim | `morgendagens` |
 | `TOKEN_EXPIRE_TIME` | Token TTL in milliseconds | `3600000` (1 hour) |
 | `SECRET_KEY` | HS256 signing secret (32+ bytes) | `morgendagens-very-secret-key-256bit!!` |
+| `ECONOMIC_APP_SECRET_TOKEN` | Server-side e-conomic app secret | — |
+| `ECONOMIC_AGREEMENT_GRANT_TOKEN` | Server-side grant for the connected e-conomic agreement | — |
+| `ECONOMIC_BASE_URL` | e-conomic REST API base URL | `https://restapi.e-conomic.com` |
 
 In production, set the `DEPLOYED` environment variable to any value and supply all of the above as environment variables.
+
+Products and customers are queried from e-conomic and held only in process memory for five minutes; catalog records are not copied into PostgreSQL. Barred records are hidden. PostgreSQL stores website users, requests, and an immutable name, description, product number, and unit-price snapshot on each request line so old bookings do not change when the e-conomic catalog changes.
+
+Creating or editing a request never creates an order, invoice, or other booking in e-conomic. Admin acceptance currently changes only the PostgreSQL request status. A future export to e-conomic must start from that accepted state, never from an unaccepted request. E-conomic credentials are read only by the backend and must never be exposed to the frontend.
 
 ---
 
@@ -271,11 +284,18 @@ All endpoints are prefixed with `/api`. Protected endpoints require an `Authoriz
 
 | Method | Path | Access | Description |
 |---|---|---|---|
-| `GET` | `/api/product/all` | USER, ADMIN | Get all products |
-| `GET` | `/api/product/{id}` | USER, ADMIN | Get product by ID |
-| `POST` | `/api/product/` | ADMIN | Create a product |
-| `PUT` | `/api/product/{id}` | ADMIN | Update a product |
-| `DELETE` | `/api/product/{id}` | ADMIN | Delete a product |
+| `GET` | `/api/product/all` | Public | Query available e-conomic products |
+| `GET` | `/api/product/{productNumber}` | USER, ADMIN | Query an e-conomic product by product number |
+
+Product creation and deletion are managed in e-conomic. Admin product edits use e-conomic directly and are never persisted in PostgreSQL.
+
+---
+
+### e-conomic Customers
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/economic/customer/all` | ADMIN | Query available e-conomic customers |
 
 ---
 
@@ -300,7 +320,7 @@ Requests include weather forecast data for the request location.
 |---|---|---|---|
 | `GET` | `/api/product-in-requests/all` | USER, ADMIN | Get all line items |
 | `GET` | `/api/product-in-requests/{id}` | USER, ADMIN | Get line item by ID |
-| `POST` | `/api/product-in-requests/` | USER, ADMIN | Add product to request |
+| `POST` | `/api/product-in-requests/` | Public | Add product snapshot to request using its e-conomic product number |
 | `PUT` | `/api/product-in-requests/{id}` | USER, ADMIN | Update line item |
 | `DELETE` | `/api/product-in-requests/{id}` | USER, ADMIN | Remove product from request |
 

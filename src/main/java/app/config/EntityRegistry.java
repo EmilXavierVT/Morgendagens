@@ -10,6 +10,7 @@ final class EntityRegistry {
     static void registerEntities(Configuration configuration) {
         configuration.addAnnotatedClass(User.class);
         configuration.addAnnotatedClass(Product.class);
+        configuration.addAnnotatedClass(EconomicCustomer.class);
         configuration.addAnnotatedClass(Tenant.class);
         configuration.addAnnotatedClass(Request.class);
         configuration.addAnnotatedClass(ProductInRequest.class);
@@ -18,5 +19,7 @@ final class EntityRegistry {
         configuration.addAnnotatedClass(WorkLog.class);
         configuration.addAnnotatedClass(CleaningAppointment.class);
         configuration.addAnnotatedClass(SubscriptionDeal.class);
+        configuration.addAnnotatedClass(YouthIslandBooking.class);
+        configuration.addAnnotatedClass(YouthIslandBookingItem.class);
     }
 }

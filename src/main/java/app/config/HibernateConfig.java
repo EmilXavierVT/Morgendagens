@@ -1,6 +1,7 @@
 package app.config;
 
 import app.utils.Utils;
+import app.services.economic.EconomicMirrorSyncService;
 import jakarta.persistence.EntityManagerFactory;
 
 import java.util.Properties;
@@ -16,6 +17,8 @@ public final class HibernateConfig {
             synchronized (HibernateConfig.class) {
                 if (emf == null) {
                     emf = HibernateEmfBuilder.build(buildProps());
+                    LegacyProductCatalogMigration.migrate(emf);
+                    new EconomicMirrorSyncService(emf).syncAllSafely();
                 }
             }
         }
@@ -47,8 +50,10 @@ public final class HibernateConfig {
         String dbName = Utils.getPropertyValue("DB_NAME", "config.properties");
         String username = Utils.getPropertyValue("DB_USERNAME", "config.properties");
         String password = Utils.getPropertyValue("DB_PASSWORD", "config.properties");
+        String host = Utils.getPropertyValueOrDefault("DB_HOST", "config.properties", "localhost");
+        String port = Utils.getPropertyValueOrDefault("DB_PORT", "config.properties", "5432");
 
-        props.put("hibernate.connection.url", "jdbc:postgresql://localhost:5432/" + dbName);
+        props.put("hibernate.connection.url", "jdbc:postgresql://" + host + ":" + port + "/" + dbName);
         props.put("hibernate.connection.username", username);
         props.put("hibernate.connection.password", password);
     }

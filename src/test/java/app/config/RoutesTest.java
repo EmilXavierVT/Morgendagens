@@ -412,6 +412,20 @@ class RoutesTest {
                 .body("roles", hasItems("FLEX"));
     }
 
+    @Test
+    void set_youth_island_adds_youth_island_role_to_user() {
+        long tenantId = createTenantId("tenant-user-youth-island");
+        long userId = createUserId(tenantId, "Youth", "Island", "youth.island.role." + System.nanoTime() + "@example.com");
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().put("/user/{id}/youth-island", userId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) userId))
+                .body("roles", hasItems("YOUTH_ISLAND"));
+    }
+
     // ─── Request routes ────────────────────────────────────────────────────────
 
     @Test
@@ -1151,6 +1165,142 @@ class RoutesTest {
                 .body("msg", equalTo("User must have both SUBSCRIBER and CLEANING_CLIENT roles"));
     }
 
+    // ─── Youth Island booking routes ──────────────────────────────────────────
+
+    @Test
+    void youth_island_user_can_create_and_read_own_booking() {
+        String youthEmail = "youth.booking." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-youth-island-booking");
+        long youthUserId = createUserId(tenantId, "Anne", "Ungdomsoen", youthEmail);
+        assignYouthIslandRole(youthUserId);
+        String youthToken = loginAndGetToken(youthEmail, "secret");
+        String spectraNumber = "S-" + System.nanoTime();
+
+        Number bookingIdNumber = given()
+                .header("Authorization", "Bearer " + youthToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "customerName": "Bestyrelsesmoede MGF FUO",
+                          "eventDate": "2026-10-05",
+                          "allergies": "No nuts",
+                          "location": "Ungdomsoen",
+                          "spectraReservationNumber": "%s",
+                          "notes": "Board meeting",
+                          "snackTrayCount": 2,
+                          "orderDate": "2026-10-01",
+                          "items": [
+                            {
+                              "guestCount": 20,
+                              "servingTime": "17:45:00",
+                              "productNumber": "YI-2026-MAIN",
+                              "productName": "Youth Island vegetarian main",
+                              "menu": "Vegetarian main course with bread",
+                              "room": "Artilleri"
+                            },
+                            {
+                              "guestCount": 11,
+                              "servingTime": "19:15:00",
+                              "productNumber": "YI-2026-DESSERT",
+                              "productName": "Youth Island dessert",
+                              "menu": "Dessert",
+                              "room": "Raketvaerksted"
+                            }
+                          ]
+                        }
+                        """.formatted(spectraNumber))
+                .when().post("/youth-island-booking/")
+                .then()
+                .statusCode(201)
+                .body("id", notNullValue())
+                .body("orderedByUserId", equalTo((int) youthUserId))
+                .body("orderedByName", equalTo("Anne Ungdomsoen"))
+                .body("totalGuests", equalTo(31))
+                .body("items", hasSize(2))
+                .body("items[0].productNumber", equalTo("YI-2026-MAIN"))
+                .extract()
+                .path("id");
+        long bookingId = bookingIdNumber.longValue();
+
+        String updateBody = """
+                {
+                  "customerName": "Bestyrelsesmoede MGF FUO - updated",
+                  "eventDate": "2026-10-06",
+                  "allergies": "No nuts or shellfish",
+                  "location": "Artilleri",
+                  "spectraReservationNumber": "%s",
+                  "notes": "Updated board meeting",
+                  "snackTrayCount": 3,
+                  "orderDate": "2026-10-02",
+                  "items": [
+                    {
+                      "guestCount": 25,
+                      "servingTime": "18:00:00",
+                      "productNumber": "YI-2026-MAIN-UPDATED",
+                      "productName": "Youth Island updated main",
+                      "menu": "Updated vegetarian main course",
+                      "room": "Artilleri"
+                    }
+                  ]
+                }
+                """.formatted(spectraNumber);
+
+        given()
+                .header("Authorization", "Bearer " + youthToken)
+                .contentType(ContentType.JSON)
+                .body(updateBody)
+                .when().put("/youth-island-booking/{id}", bookingId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) bookingId))
+                .body("orderedByUserId", equalTo((int) youthUserId))
+                .body("customerName", equalTo("Bestyrelsesmoede MGF FUO - updated"))
+                .body("totalGuests", equalTo(25))
+                .body("items", hasSize(1))
+                .body("items[0].productNumber", equalTo("YI-2026-MAIN-UPDATED"))
+                .body("items[0].productName", equalTo("Youth Island updated main"))
+                .body("updatedAt", notNullValue());
+
+        String otherYouthEmail = "other.youth.booking." + System.nanoTime() + "@example.com";
+        long otherYouthUserId = createUserId(tenantId, "Other", "Youth", otherYouthEmail);
+        assignYouthIslandRole(otherYouthUserId);
+        String otherYouthToken = loginAndGetToken(otherYouthEmail, "secret");
+
+        given()
+                .header("Authorization", "Bearer " + otherYouthToken)
+                .contentType(ContentType.JSON)
+                .body(updateBody)
+                .when().put("/youth-island-booking/{id}", bookingId)
+                .then()
+                .statusCode(403);
+
+        given()
+                .header("Authorization", "Bearer " + youthToken)
+                .when().get("/youth-island-booking/all")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(1))
+                .body("[0].id", equalTo((int) bookingId))
+                .body("[0].spectraReservationNumber", equalTo(spectraNumber))
+                .body("[0].totalGuests", equalTo(25));
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().get("/youth-island-booking/{id}", bookingId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) bookingId));
+    }
+
+    @Test
+    void regular_user_cannot_access_youth_island_bookings() {
+        given()
+                .header("Authorization", "Bearer " + userToken)
+                .when().get("/youth-island-booking/all")
+                .then()
+                .statusCode(403);
+    }
+
     // ─── Helpers ───────────────────────────────────────────────────────────────
 
     private static String loginAndGetToken(String email, String password) {
@@ -1236,6 +1386,14 @@ class RoutesTest {
         given()
                 .header("Authorization", "Bearer " + adminToken)
                 .when().put("/user/{id}/subscriber", userId)
+                .then()
+                .statusCode(200);
+    }
+
+    private static void assignYouthIslandRole(long userId) {
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().put("/user/{id}/youth-island", userId)
                 .then()
                 .statusCode(200);
     }

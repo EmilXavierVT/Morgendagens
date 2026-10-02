@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.sql.Time;
+import java.math.BigDecimal;
 
 @Data
 @NoArgsConstructor
@@ -15,6 +16,10 @@ public class ProductInRequestDTO {
     private Long id;
     private Long requestId;
     private Long productId;
+    private String productNumber;
+    private String productName;
+    private String productDescription;
+    private BigDecimal unitPrice;
     private Time time;
     private int amount;
 }

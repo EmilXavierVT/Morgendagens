@@ -1,0 +1,6 @@
+@baseUrl = {{url}}/api/economic/customer
+
+### GET live e-conomic customers (admin only)
+GET {{baseUrl}}/all
+Accept: application/json
+Authorization: Bearer {{authToken}}

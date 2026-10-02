@@ -3,6 +3,7 @@ package app.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.sql.Time;
 
 @Getter
@@ -23,9 +24,21 @@ public class ProductInRequest implements IEntity {
     @ToString.Exclude
     private Request request;
 
-    @ManyToOne(optional = false)
+    @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;
+
+    @Column(name = "economic_product_number", length = 25)
+    private String productNumber;
+
+    @Column(name = "product_name", length = 300)
+    private String productName;
+
+    @Column(name = "product_description", length = 500)
+    private String productDescription;
+
+    @Column(name = "unit_price", precision = 12, scale = 2)
+    private BigDecimal unitPrice;
 
     private Time time;
 

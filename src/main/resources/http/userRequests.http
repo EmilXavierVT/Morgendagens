@@ -1,4 +1,6 @@
 @baseUrl = {{url}}/api/user
+@newAdminEmail = local.admin@example.com
+@newAdminPassword = change-me-now
 #@authToken =eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJtb3JnZW5kYWdlbnMiLCJzdWIiOiJlbWlseGF2aWVydGhvcnNlbkBnbWFpbC5jb20iLCJleHAiOjE3NzQyNzQ2NDAsImVtYWlsIjoiZW1pbHhhdmllcnRob3JzZW5AZ21haWwuY29tIiwicm9sZXMiOiJBRE1JTiJ9.q1ZFCcigw7FZGZ5Yz-J04vBHjMqQZ52JSvK0GoEFROw
 
 ### POST register
@@ -8,7 +10,7 @@ Content-Type: application/json
 
 
 {
-  "email": "emilxavierthorsen@gmail.com",
+  "email": "ex@tv.com",
   "password": "1234"
 }
 
@@ -17,11 +19,34 @@ POST {{url}}/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "emilxavierthorsen@gmail.com",
-  "password": "changeme"
+ "email": "{{newAdminEmail}}",
+  "password": "{{newAdminPassword}}"
+
 }
 
 > {% client.global.set("authToken", response.body.token); %}
+
+### POST register the future admin (run after logging in as an existing admin)
+POST {{url}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{newAdminEmail}}",
+  "password": "{{newAdminPassword}}"
+}
+
+> {% client.global.set("newAdminUserId", response.body.id); %}
+
+### PUT grant the ADMIN role to the newly registered user
+PUT {{baseUrl}}/9/admin
+Authorization: Bearer {{authToken}}
+
+> {%
+  client.test("New user has the ADMIN role", function() {
+    client.assert(response.status === 200, "Expected HTTP 200");
+    client.assert(response.body.roles.includes("ADMIN"), "ADMIN role was not assigned");
+  });
+%}
 
 ###POST
 POST {{url}}/api/email/send

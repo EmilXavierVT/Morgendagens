@@ -1,9 +1,12 @@
 package app.services.routeSecurity.routes;
 
+import app.exceptions.ApiException;
 import app.dto.ProductDTO;
 import app.entities.Product;
 import app.services.dtoConverter.ProductMapper;
 import app.services.entityServices.ProductService;
+import app.services.economic.EconomicProductCatalogService;
+import app.services.economic.EconomicMirrorSyncService;
 import io.javalin.http.Context;
 import jakarta.persistence.EntityManagerFactory;
 
@@ -13,60 +16,47 @@ import java.util.List;
 public class ProductRoutes {
     private final ProductService productService;
     private final ProductMapper productMapper;
+    private final EconomicProductCatalogService productCatalogService;
+    private final EconomicMirrorSyncService mirrorSyncService;
 
     public ProductRoutes(EntityManagerFactory emf) {
         if (emf == null) throw new IllegalArgumentException("EntityManagerFactory cannot be null");
         this.productService = new ProductService(emf);
         this.productMapper = new ProductMapper(emf);
+        this.productCatalogService = new EconomicProductCatalogService();
+        this.mirrorSyncService = new EconomicMirrorSyncService(emf);
     }
 
     public void getAll(Context ctx) {
-        List<ProductDTO> dtos = new ArrayList<>();
-        for (Product product : productService.getAll()) {
-            dtos.add(productMapper.toDto(product));
+        List<ProductDTO> products = new ArrayList<>();
+        for (Product product : productService.getAvailableEconomicProducts()) {
+            products.add(productMapper.toDto(product));
         }
-        ctx.json(dtos);
+        ctx.json(products);
     }
 
     public void getById(Context ctx) {
-        Long id = ctx.pathParamAsClass("id", Long.class).get();
-        Product product = productService.getById(id);
-        if (product == null) {
-            ctx.status(404).result("Product not found");
-            return;
+        String productNumber = ctx.pathParam("id");
+        Product product = productService.getByEconomicProductNumber(productNumber);
+        if (product == null || !product.isEconomicAvailable()) {
+            throw new ApiException(404, "Product not found in local e-conomic mirror");
         }
         ctx.json(productMapper.toDto(product));
     }
 
     public void create(Context ctx) {
-        ProductDTO dto = ctx.bodyValidator(ProductDTO.class).get();
-        Product product = productMapper.fromDto(dto);
-        Product created = productService.create(product);
-        ctx.status(201).json(productMapper.toDto(created));
-
+        throw new ApiException(409, "Products are managed in e-conomic");
     }
 
     public void update(Context ctx) {
-        Long id = ctx.pathParamAsClass("id", Long.class).get();
-        ProductDTO dto = ctx.bodyValidator(ProductDTO.class).get();
-        dto.setId(id);
-        Product product = productMapper.fromDto(dto);
-        Product updated = productService.update(product);
-        if (updated == null) {
-            ctx.status(404).result("Product not found");
-            return;
-        }
-        ctx.json(productMapper.toDto(productService.getById(id)));
+        String productNumber = ctx.pathParam("id");
+        ProductDTO update = ctx.bodyValidator(ProductDTO.class).get();
+        ProductDTO updated = productCatalogService.updateProduct(productNumber, update);
+        mirrorSyncService.upsertProduct(updated);
+        ctx.json(updated);
     }
 
     public void delete(Context ctx) {
-        Long id = ctx.pathParamAsClass("id", Long.class).get();
-        Product deleted = productService.delete(id);
-        if (deleted == null) {
-            ctx.status(404).result("Product not found");
-            return;
-        }
-        ctx.status(204);
-
+        throw new ApiException(409, "Products are managed in e-conomic");
     }
 }

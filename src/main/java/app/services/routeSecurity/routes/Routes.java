@@ -33,12 +33,14 @@ public class Routes {
         TenantRoutes tenantRoutes = new TenantRoutes(emf);
         UserRoutes userRoutes = new UserRoutes(emf);
         ProductRoutes productRoutes = new ProductRoutes(emf);
+        EconomicCustomerRoutes economicCustomerRoutes = new EconomicCustomerRoutes(emf);
         ProductInRequestRoutes productInRequestRoutes = new ProductInRequestRoutes(emf);
         RequestRoutes requestRoutes = new RequestRoutes(emf);
         MessageRoutes messageRoutes = new MessageRoutes(emf);
         WorkLogRoutes workLogRoutes = new WorkLogRoutes(emf);
         CleaningAppointmentRoutes cleaningAppointmentRoutes = new CleaningAppointmentRoutes(emf);
         SubscriptionDealRoutes subscriptionDealRoutes = new SubscriptionDealRoutes(emf);
+        YouthIslandBookingRoutes youthIslandBookingRoutes = new YouthIslandBookingRoutes(emf);
         EmailRoutes emailRoutes = new EmailRoutes();
         SystemController systemController = new SystemController();
 
@@ -66,6 +68,7 @@ public class Routes {
                 put("/{id}/cleaning-client", userRoutes::setCleaningClient, Role.ADMIN);
                 put("/{id}/subscriber", userRoutes::setSubscriber, Role.ADMIN);
                 put("/{id}/flex", userRoutes::setFlex, Role.ADMIN);
+                put("/{id}/youth-island", userRoutes::setYouthIsland, Role.ADMIN);
             });
 
             path("/product", () -> {
@@ -74,6 +77,10 @@ public class Routes {
                 get("/{id}", productRoutes::getById, Role.USER, Role.ADMIN);
                 put("/{id}", productRoutes::update, Role.ADMIN);
                 delete("/{id}", productRoutes::delete, Role.ADMIN);
+            });
+
+            path("/economic/customer", () -> {
+                get("/all", economicCustomerRoutes::getAll, Role.ADMIN);
             });
 
             path("/product-in-requests", () -> {
@@ -129,6 +136,13 @@ public class Routes {
                 put("/{id}", subscriptionDealRoutes::update, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF);
                 delete("/{id}", subscriptionDealRoutes::delete, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF);
             });
+
+            path("/youth-island-booking", () -> {
+                get("/all", youthIslandBookingRoutes::getAll, Role.ADMIN, Role.YOUTH_ISLAND);
+                post("/", youthIslandBookingRoutes::create, Role.ADMIN, Role.YOUTH_ISLAND);
+                get("/{id}", youthIslandBookingRoutes::getById, Role.ADMIN, Role.YOUTH_ISLAND);
+                put("/{id}", youthIslandBookingRoutes::update, Role.ADMIN, Role.YOUTH_ISLAND);
+            });
         };
     }
 
@@ -146,7 +160,7 @@ public class Routes {
                 on.put("msg","HELLO FROM THHE RESTRICTED AREA");
                 post("register", securityController::register );
                 post("login", securityController::login );
-                put("change-password", securityController::changePassword, Role.USER, Role.ADMIN, Role.EMPLOYEE, Role.CLEANING_STAFF, Role.CLEANING_CLIENT, Role.SUBSCRIBER, Role.FLEX);
+                put("change-password", securityController::changePassword, Role.USER, Role.ADMIN, Role.EMPLOYEE, Role.CLEANING_STAFF, Role.CLEANING_CLIENT, Role.SUBSCRIBER, Role.FLEX, Role.YOUTH_ISLAND);
                 get("protected",ctx->ctx.json(on).status(200),Role.USER);
             });
             default -> throw new IllegalArgumentException("Unknown resource name: " + resourceName);
@@ -154,7 +168,7 @@ public class Routes {
     }
 
     public enum Role implements RouteRole {
-        ANYONE,USER,ADMIN,EMPLOYEE,CLEANING_STAFF,CLEANING_CLIENT,SUBSCRIBER,FLEX
+        ANYONE,USER,ADMIN,EMPLOYEE,CLEANING_STAFF,CLEANING_CLIENT,SUBSCRIBER,FLEX,YOUTH_ISLAND
     }
 
 }

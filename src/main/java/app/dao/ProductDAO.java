@@ -6,7 +6,7 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.TypedQuery;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class ProductDAO implements IDAO<Product> {
@@ -64,7 +64,42 @@ public class ProductDAO implements IDAO<Product> {
                     "SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.productInRequests",
                     Product.class
             );
-            return new HashSet<>(query.getResultList());
+            return new LinkedHashSet<>(query.getResultList());
+        }
+    }
+
+    public Set<Product> getAvailableEconomicProducts() {
+        try(EntityManager em = emf.createEntityManager()) {
+            TypedQuery<Product> query = em.createQuery(
+                    """
+                            SELECT DISTINCT p
+                            FROM Product p
+                            LEFT JOIN FETCH p.productInRequests
+                            WHERE p.economicProductNumber IS NOT NULL
+                              AND p.economicAvailable = true
+                            ORDER BY p.name ASC
+                            """,
+                    Product.class
+            );
+            return new LinkedHashSet<>(query.getResultList());
+        }
+    }
+
+    public Product getByEconomicProductNumber(String productNumber) {
+        try (EntityManager em = emf.createEntityManager()) {
+            TypedQuery<Product> query = em.createQuery(
+                    """
+                            SELECT DISTINCT p
+                            FROM Product p
+                            LEFT JOIN FETCH p.productInRequests
+                            WHERE p.economicProductNumber = :productNumber
+                            """,
+                    Product.class
+            );
+            query.setParameter("productNumber", productNumber);
+            return query.getSingleResult();
+        } catch (NoResultException ex) {
+            return null;
         }
     }
 

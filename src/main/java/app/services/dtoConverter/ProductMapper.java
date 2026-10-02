@@ -25,6 +25,12 @@ public class ProductMapper {
         dto.setDescription(product.getDescription());
         dto.setPrice(product.getPrice());
         dto.setType(product.getType());
+        dto.setEconomicProductNumber(product.getEconomicProductNumber());
+        dto.setEconomicProductGroupName(product.getEconomicProductGroupName());
+        dto.setEconomicProductGroupNumber(product.getEconomicProductGroupNumber());
+        dto.setEconomicAvailable(product.isEconomicAvailable());
+        dto.setEconomicLastUpdated(product.getEconomicLastUpdated());
+        dto.setEconomicSelf(product.getEconomicSelf());
 
         List<Long> ids = new ArrayList<>();
         if (product.getProductInRequests() != null) {
@@ -46,6 +52,12 @@ public class ProductMapper {
         product.setDescription(dto.getDescription());
         product.setPrice(dto.getPrice());
         product.setType(dto.getType());
+        product.setEconomicProductNumber(dto.getEconomicProductNumber());
+        product.setEconomicProductGroupName(dto.getEconomicProductGroupName());
+        product.setEconomicProductGroupNumber(dto.getEconomicProductGroupNumber());
+        product.setEconomicAvailable(dto.isEconomicAvailable());
+        product.setEconomicLastUpdated(dto.getEconomicLastUpdated());
+        product.setEconomicSelf(dto.getEconomicSelf());
 
         if (dto.getProductInRequestIds() != null) {
             List<ProductInRequest> list = new ArrayList<>();

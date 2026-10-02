@@ -8,6 +8,21 @@ import java.util.Properties;
 
 public class Utils {
 
+    public static String getPropertyValueOrDefault(String propName, String resourceName, String defaultValue) {
+        try (InputStream is = Utils.class.getClassLoader().getResourceAsStream(resourceName)) {
+            if (is == null) {
+                return defaultValue;
+            }
+
+            Properties prop = new Properties();
+            prop.load(is);
+            String value = prop.getProperty(propName);
+            return value == null || value.isBlank() ? defaultValue : value.trim();
+        } catch (IOException ex) {
+            return defaultValue;
+        }
+    }
+
     public static String getPropertyValue(String propName, String resourceName)  {
         try (InputStream is = Utils.class.getClassLoader().getResourceAsStream(resourceName)) {
             if (is == null) {

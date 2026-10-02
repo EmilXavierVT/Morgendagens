@@ -17,8 +17,9 @@ Authorization: Bearer {{authToken}}
 
 {
   "requestId": 1,
-  "productId": 1,
-  "time": "10:30:00"
+  "productNumber": "0101",
+  "time": "10:30:00",
+  "amount": 2
 }
 
 ### PUT update product-in-request
@@ -28,8 +29,9 @@ Authorization: Bearer {{authToken}}
 
 {
   "requestId": 1,
-  "productId": 2,
-  "time": "15:45:00"
+  "productNumber": "0102",
+  "time": "15:45:00",
+  "amount": 3
 }
 
 ### DELETE product-in-request

@@ -33,4 +33,12 @@ public class ProductService implements CrudService<Product> {
     public Set<Product> getAll() {
         return productDAO.getAll();
     }
+
+    public Set<Product> getAvailableEconomicProducts() {
+        return productDAO.getAvailableEconomicProducts();
+    }
+
+    public Product getByEconomicProductNumber(String productNumber) {
+        return productDAO.getByEconomicProductNumber(productNumber);
+    }
 }
