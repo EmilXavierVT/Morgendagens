@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -17,8 +19,11 @@ public class CleaningAppointmentDTO {
     private Long id;
     private Long cleaningClientId;
     private Long cleaningStaffId;
+    private Long projectId;
+    private String projectName;
     private LocalDateTime appointmentTime;
     private LocalDateTime cancellationTime;
     private int durationMinutes;
     private boolean vacation;
+    private List<CleaningAssignmentTaskDTO> tasks = new ArrayList<>();
 }

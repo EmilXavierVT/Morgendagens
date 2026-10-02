@@ -18,6 +18,8 @@ final class EntityRegistry {
         configuration.addAnnotatedClass(Role.class);
         configuration.addAnnotatedClass(WorkLog.class);
         configuration.addAnnotatedClass(CleaningAppointment.class);
+        configuration.addAnnotatedClass(CleaningProject.class);
+        configuration.addAnnotatedClass(CleaningAssignmentTask.class);
         configuration.addAnnotatedClass(SubscriptionDeal.class);
         configuration.addAnnotatedClass(YouthIslandBooking.class);
         configuration.addAnnotatedClass(YouthIslandBookingItem.class);

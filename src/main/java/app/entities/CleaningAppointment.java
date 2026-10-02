@@ -3,6 +3,8 @@ package app.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,6 +29,17 @@ public class CleaningAppointment implements IEntity {
     @JoinColumn(name = "cleaning_staff_id")
     @ToString.Exclude
     private User cleaningStaff;
+
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "project_id")
+    @ToString.Exclude
+    private CleaningProject project;
+
+    @OneToMany(mappedBy = "appointment", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC, id ASC")
+    @ToString.Exclude
+    @Builder.Default
+    private List<CleaningAssignmentTask> tasks = new ArrayList<>();
 
     private LocalDateTime appointmentTime;
 

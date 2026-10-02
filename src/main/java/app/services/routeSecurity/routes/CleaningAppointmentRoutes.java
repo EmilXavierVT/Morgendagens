@@ -47,7 +47,7 @@ public class CleaningAppointmentRoutes {
             return;
         }
 
-        for (CleaningAppointment appointment : cleaningAppointmentService.getVisibleToCleaningStaff(currentUser.getId())) {
+        for (CleaningAppointment appointment : cleaningAppointmentService.getAll()) {
             dtos.add(cleaningAppointmentMapper.toDto(appointment));
         }
         ctx.json(dtos);
