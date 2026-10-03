@@ -5,6 +5,7 @@ import app.dto.CleaningAppointmentDTO;
 import app.entities.CleaningAssignmentTask;
 import app.entities.CleaningAppointment;
 import app.entities.CleaningProject;
+import app.entities.EconomicCustomer;
 import app.entities.User;
 
 import java.util.ArrayList;
@@ -21,6 +22,12 @@ public class CleaningAppointmentMapper {
         dto.setCleaningStaffId(appointment.getCleaningStaff() != null ? appointment.getCleaningStaff().getId() : null);
         dto.setProjectId(appointment.getProject() != null ? appointment.getProject().getId() : null);
         dto.setProjectName(appointment.getProject() != null ? appointment.getProject().getName() : null);
+        dto.setEconomicCustomerNumber(appointment.getProject() != null && appointment.getProject().getEconomicCustomer() != null
+                ? appointment.getProject().getEconomicCustomer().getCustomerNumber()
+                : null);
+        dto.setEconomicCustomerName(appointment.getProject() != null && appointment.getProject().getEconomicCustomer() != null
+                ? appointment.getProject().getEconomicCustomer().getName()
+                : null);
         dto.setAppointmentTime(appointment.getAppointmentTime());
         dto.setCancellationTime(appointment.getCancellationTime());
         dto.setDurationMinutes(appointment.getDurationMinutes());
@@ -43,6 +50,20 @@ public class CleaningAppointmentMapper {
             CleaningProject project = new CleaningProject();
             project.setId(dto.getProjectId());
             project.setName(dto.getProjectName());
+            if (dto.getEconomicCustomerNumber() != null) {
+                EconomicCustomer customer = new EconomicCustomer();
+                customer.setCustomerNumber(dto.getEconomicCustomerNumber());
+                customer.setName(dto.getEconomicCustomerName());
+                project.setEconomicCustomer(customer);
+            }
+            appointment.setProject(project);
+        } else if (dto.getEconomicCustomerNumber() != null) {
+            CleaningProject project = new CleaningProject();
+            EconomicCustomer customer = new EconomicCustomer();
+            customer.setCustomerNumber(dto.getEconomicCustomerNumber());
+            customer.setName(dto.getEconomicCustomerName());
+            project.setEconomicCustomer(customer);
+            project.setName(dto.getEconomicCustomerName());
             appointment.setProject(project);
         }
 

@@ -13,6 +13,7 @@ import jakarta.persistence.EntityManagerFactory;
 import java.sql.Time;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,6 +35,7 @@ class ServiceCrudIntegrationTest {
     private static MessageService messageService;
     private static ProductInRequestService productInRequestService;
     private static SubscriptionDealService subscriptionDealService;
+    private static CleaningAppointmentService cleaningAppointmentService;
 
     @BeforeAll
     static void setup() {
@@ -51,6 +53,7 @@ class ServiceCrudIntegrationTest {
         messageService = new MessageService(emf);
         productInRequestService = new ProductInRequestService(emf);
         subscriptionDealService = new SubscriptionDealService(emf);
+        cleaningAppointmentService = new CleaningAppointmentService(emf);
     }
 
     @AfterAll
@@ -192,5 +195,98 @@ class ServiceCrudIntegrationTest {
         assertNull(requestService.getById(request.getId()));
         assertNull(productService.getById(product.getId()));
         assertNull(tenantService.getById(tenant.getId()));
+    }
+
+    @Test
+    void cleaning_appointment_task_edits_can_apply_to_future_assignments_for_same_customer() {
+        Tenant tenant = Tenant.builder()
+                .name("cleaning-task-template")
+                .type("cleaning")
+                .status(1)
+                .build();
+        tenantService.create(tenant);
+
+        User client = new User("cleaning-template-client@example.com", "pw");
+        client.setTenant(tenant);
+        client.setFirstName("Template");
+        client.setLastName("Client");
+        userService.create(client);
+        userService.setCleaningClient(client.getId());
+
+        User staff = new User("cleaning-template-staff@example.com", "pw");
+        staff.setTenant(tenant);
+        staff.setFirstName("Template");
+        staff.setLastName("Staff");
+        userService.create(staff);
+        userService.setCleaningStaff(staff.getId());
+
+        CleaningAppointment earlier = buildCleaningAppointment(
+                client,
+                staff,
+                LocalDateTime.of(2026, 1, 1, 9, 0),
+                List.of(buildCleaningTask("Old task", false, 1))
+        );
+        earlier = cleaningAppointmentService.create(earlier);
+
+        CleaningAppointment source = buildCleaningAppointment(
+                client,
+                staff,
+                LocalDateTime.of(2026, 1, 8, 9, 0),
+                List.of(buildCleaningTask("Old task", false, 1))
+        );
+        source = cleaningAppointmentService.create(source);
+
+        CleaningAppointment future = buildCleaningAppointment(
+                client,
+                staff,
+                LocalDateTime.of(2026, 1, 15, 9, 0),
+                List.of(buildCleaningTask("Kitchen reset", true, 1), buildCleaningTask("Old task", false, 2))
+        );
+        future = cleaningAppointmentService.create(future);
+
+        CleaningAppointment update = buildCleaningAppointment(
+                client,
+                staff,
+                source.getAppointmentTime(),
+                List.of(buildCleaningTask("Kitchen reset", false, 1), buildCleaningTask("Floors", false, 2))
+        );
+        update.setId(source.getId());
+        update.setProject(source.getProject());
+
+        cleaningAppointmentService.update(update, true);
+
+        CleaningAppointment refreshedEarlier = cleaningAppointmentService.getById(earlier.getId());
+        CleaningAppointment refreshedSource = cleaningAppointmentService.getById(source.getId());
+        CleaningAppointment refreshedFuture = cleaningAppointmentService.getById(future.getId());
+
+        assertEquals(List.of("Old task"), taskTitles(refreshedEarlier));
+        assertEquals(List.of("Kitchen reset", "Floors"), taskTitles(refreshedSource));
+        assertEquals(List.of("Kitchen reset", "Floors"), taskTitles(refreshedFuture));
+        assertTrue(refreshedFuture.getTasks().get(0).isCompleted());
+        assertFalse(refreshedFuture.getTasks().get(1).isCompleted());
+    }
+
+    private CleaningAppointment buildCleaningAppointment(User client, User staff, LocalDateTime appointmentTime, List<CleaningAssignmentTask> tasks) {
+        CleaningAppointment appointment = new CleaningAppointment();
+        appointment.setCleaningClient(client);
+        appointment.setCleaningStaff(staff);
+        appointment.setAppointmentTime(appointmentTime);
+        appointment.setDurationMinutes(120);
+        appointment.setTasks(tasks);
+        return appointment;
+    }
+
+    private CleaningAssignmentTask buildCleaningTask(String title, boolean completed, int sortOrder) {
+        CleaningAssignmentTask task = new CleaningAssignmentTask();
+        task.setTitle(title);
+        task.setCompleted(completed);
+        task.setSortOrder(sortOrder);
+        return task;
+    }
+
+    private List<String> taskTitles(CleaningAppointment appointment) {
+        return appointment.getTasks().stream()
+                .map(CleaningAssignmentTask::getTitle)
+                .toList();
     }
 }

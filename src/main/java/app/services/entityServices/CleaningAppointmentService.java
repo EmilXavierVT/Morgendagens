@@ -35,8 +35,12 @@ public class CleaningAppointmentService implements CrudService<CleaningAppointme
 
     @Override
     public CleaningAppointment update(CleaningAppointment appointment) {
+        return update(appointment, false);
+    }
+
+    public CleaningAppointment update(CleaningAppointment appointment, boolean applyTaskEditsToFutureAssignments) {
         validateAndAttachUsers(appointment);
-        return cleaningAppointmentDAO.update(appointment);
+        return cleaningAppointmentDAO.update(appointment, applyTaskEditsToFutureAssignments);
     }
 
     @Override
@@ -71,14 +75,24 @@ public class CleaningAppointmentService implements CrudService<CleaningAppointme
         if (appointment.getDurationMinutes() <= 0) {
             throw new ApiException(400, "durationMinutes must be greater than 0");
         }
-        if (appointment.getCleaningClient() == null || appointment.getCleaningClient().getId() == null) {
-            throw new ApiException(400, "cleaningClientId is required");
+        boolean hasLocalCleaningClient = appointment.getCleaningClient() != null && appointment.getCleaningClient().getId() != null;
+        boolean hasEconomicCustomer = appointment.getProject() != null
+                && appointment.getProject().getEconomicCustomer() != null
+                && appointment.getProject().getEconomicCustomer().getCustomerNumber() != null;
+
+        if (!hasLocalCleaningClient && !hasEconomicCustomer) {
+            throw new ApiException(400, "cleaningClientId or economicCustomerNumber is required");
         }
-        User client = userDAO.getByIdWithRoles(appointment.getCleaningClient().getId());
-        if (client == null) {
-            throw new ApiException(404, "Cleaning client not found");
+
+        if (hasLocalCleaningClient) {
+            User client = userDAO.getByIdWithRoles(appointment.getCleaningClient().getId());
+            if (client == null) {
+                throw new ApiException(404, "Cleaning client not found");
+            }
+            appointment.setCleaningClient(client);
+        } else {
+            appointment.setCleaningClient(null);
         }
-        appointment.setCleaningClient(client);
         ensureDefaultTasks(appointment);
 
         if (appointment.getCleaningStaff() == null || appointment.getCleaningStaff().getId() == null) {

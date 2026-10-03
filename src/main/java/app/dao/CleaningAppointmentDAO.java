@@ -3,13 +3,19 @@ package app.dao;
 import app.entities.CleaningAssignmentTask;
 import app.entities.CleaningAppointment;
 import app.entities.CleaningProject;
+import app.entities.EconomicCustomer;
 import app.entities.User;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.NoResultException;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.Set;
 
 public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
@@ -36,9 +42,10 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
         try (EntityManager em = emf.createEntityManager()) {
             return em.createQuery(
                             "SELECT DISTINCT ca FROM CleaningAppointment ca " +
-                                    "JOIN FETCH ca.cleaningClient " +
+                                    "LEFT JOIN FETCH ca.cleaningClient " +
                                     "LEFT JOIN FETCH ca.cleaningStaff " +
-                                    "LEFT JOIN FETCH ca.project " +
+                                    "LEFT JOIN FETCH ca.project project " +
+                                    "LEFT JOIN FETCH project.economicCustomer " +
                                     "LEFT JOIN FETCH ca.tasks " +
                                     "WHERE ca.id = :id",
                             CleaningAppointment.class)
@@ -51,6 +58,10 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
 
     @Override
     public CleaningAppointment update(CleaningAppointment appointment) {
+        return update(appointment, false);
+    }
+
+    public CleaningAppointment update(CleaningAppointment appointment, boolean applyTaskEditsToFutureAssignments) {
         try (EntityManager em = emf.createEntityManager()) {
             em.getTransaction().begin();
 
@@ -62,6 +73,9 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
 
             attachRelations(em, appointment);
             CleaningAppointment updated = applyUpdate(existing, appointment);
+            if (applyTaskEditsToFutureAssignments) {
+                applyTaskTemplateToFutureAssignments(em, updated);
+            }
             em.getTransaction().commit();
             return getById(updated.getId());
         }
@@ -85,9 +99,10 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
         try (EntityManager em = emf.createEntityManager()) {
             return new HashSet<>(em.createQuery(
                     "SELECT DISTINCT ca FROM CleaningAppointment ca " +
-                            "JOIN FETCH ca.cleaningClient " +
+                            "LEFT JOIN FETCH ca.cleaningClient " +
                             "LEFT JOIN FETCH ca.cleaningStaff " +
-                            "LEFT JOIN FETCH ca.project " +
+                            "LEFT JOIN FETCH ca.project project " +
+                            "LEFT JOIN FETCH project.economicCustomer " +
                             "LEFT JOIN FETCH ca.tasks " +
                             "ORDER BY ca.appointmentTime",
                     CleaningAppointment.class
@@ -99,9 +114,10 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
         try (EntityManager em = emf.createEntityManager()) {
             return em.createQuery(
                             "SELECT DISTINCT ca FROM CleaningAppointment ca " +
-                                    "JOIN FETCH ca.cleaningClient " +
+                                    "LEFT JOIN FETCH ca.cleaningClient " +
                                     "JOIN FETCH ca.cleaningStaff " +
-                                    "LEFT JOIN FETCH ca.project " +
+                                    "LEFT JOIN FETCH ca.project project " +
+                                    "LEFT JOIN FETCH project.economicCustomer " +
                                     "LEFT JOIN FETCH ca.tasks " +
                                     "WHERE ca.cleaningStaff.id = :cleaningStaffId ORDER BY ca.appointmentTime",
                             CleaningAppointment.class)
@@ -114,9 +130,10 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
         try (EntityManager em = emf.createEntityManager()) {
             return em.createQuery(
                             "SELECT DISTINCT ca FROM CleaningAppointment ca " +
-                                    "JOIN FETCH ca.cleaningClient " +
+                                    "LEFT JOIN FETCH ca.cleaningClient " +
                                     "LEFT JOIN FETCH ca.cleaningStaff " +
-                                    "LEFT JOIN FETCH ca.project " +
+                                    "LEFT JOIN FETCH ca.project project " +
+                                    "LEFT JOIN FETCH project.economicCustomer " +
                                     "LEFT JOIN FETCH ca.tasks " +
                                     "WHERE ca.cleaningStaff.id = :cleaningStaffId OR ca.cleaningStaff IS NULL ORDER BY ca.appointmentTime",
                             CleaningAppointment.class)
@@ -129,9 +146,10 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
         try (EntityManager em = emf.createEntityManager()) {
             return em.createQuery(
                             "SELECT DISTINCT ca FROM CleaningAppointment ca " +
-                                    "JOIN FETCH ca.cleaningClient " +
+                                    "LEFT JOIN FETCH ca.cleaningClient " +
                                     "LEFT JOIN FETCH ca.cleaningStaff " +
-                                    "LEFT JOIN FETCH ca.project " +
+                                    "LEFT JOIN FETCH ca.project project " +
+                                    "LEFT JOIN FETCH project.economicCustomer " +
                                     "LEFT JOIN FETCH ca.tasks " +
                                     "WHERE ca.cleaningClient.id = :cleaningClientId ORDER BY ca.appointmentTime",
                             CleaningAppointment.class)
@@ -142,13 +160,16 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
 
     private void attachRelations(EntityManager em, CleaningAppointment appointment) {
         User client = appointment.getCleaningClient();
-        if (client == null || client.getId() == null) {
-            throw new IllegalArgumentException("CleaningAppointment must reference a cleaning client");
+        User managedClient = null;
+        if (client != null && client.getId() != null) {
+            managedClient = em.find(User.class, client.getId());
+            if (managedClient == null) {
+                throw new IllegalArgumentException("User with id " + client.getId() + " does not exist");
+            }
         }
 
-        User managedClient = em.find(User.class, client.getId());
-        if (managedClient == null) {
-            throw new IllegalArgumentException("User with id " + client.getId() + " does not exist");
+        if (managedClient == null && !hasEconomicCustomer(appointment.getProject())) {
+            throw new IllegalArgumentException("CleaningAppointment must reference a cleaning client or e-conomic customer");
         }
 
         appointment.setCleaningClient(managedClient);
@@ -174,10 +195,19 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
             if (project == null) {
                 throw new IllegalArgumentException("Cleaning project with id " + incomingProject.getId() + " does not exist");
             }
-            if (project.getCleaningClient() == null || !project.getCleaningClient().getId().equals(managedClient.getId())) {
+            if (managedClient != null && (project.getCleaningClient() == null || !project.getCleaningClient().getId().equals(managedClient.getId()))) {
                 throw new IllegalArgumentException("Cleaning project must belong to the selected cleaning client");
             }
             return project;
+        }
+
+        if (hasEconomicCustomer(incomingProject)) {
+            EconomicCustomer customer = resolveEconomicCustomer(em, incomingProject.getEconomicCustomer());
+            return resolveEconomicProject(em, incomingProject, customer);
+        }
+
+        if (managedClient == null) {
+            throw new IllegalArgumentException("Cleaning project requires a cleaning client or e-conomic customer");
         }
 
         List<CleaningProject> existingProjects = em.createQuery(
@@ -200,6 +230,62 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
         project.setActive(true);
         em.persist(project);
         return project;
+    }
+
+    private boolean hasEconomicCustomer(CleaningProject incomingProject) {
+        return incomingProject != null
+                && incomingProject.getEconomicCustomer() != null
+                && incomingProject.getEconomicCustomer().getCustomerNumber() != null;
+    }
+
+    private EconomicCustomer resolveEconomicCustomer(EntityManager em, EconomicCustomer incomingCustomer) {
+        EconomicCustomer customer = em.createQuery(
+                        "SELECT customer FROM EconomicCustomer customer WHERE customer.customerNumber = :customerNumber",
+                        EconomicCustomer.class)
+                .setParameter("customerNumber", incomingCustomer.getCustomerNumber())
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+
+        if (customer == null) {
+            throw new IllegalArgumentException("e-conomic customer " + incomingCustomer.getCustomerNumber() + " does not exist locally");
+        }
+
+        return customer;
+    }
+
+    private CleaningProject resolveEconomicProject(EntityManager em, CleaningProject incomingProject, EconomicCustomer customer) {
+        List<CleaningProject> existingProjects = em.createQuery(
+                        "SELECT cp FROM CleaningProject cp WHERE cp.economicCustomer.customerNumber = :customerNumber ORDER BY cp.id",
+                        CleaningProject.class)
+                .setParameter("customerNumber", customer.getCustomerNumber())
+                .setMaxResults(1)
+                .getResultList();
+        if (!existingProjects.isEmpty()) {
+            CleaningProject project = existingProjects.get(0);
+            if (incomingProject.getName() != null && !incomingProject.getName().isBlank()) {
+                project.setName(incomingProject.getName().trim());
+            }
+            return project;
+        }
+
+        CleaningProject project = new CleaningProject();
+        project.setEconomicCustomer(customer);
+        project.setName(resolveEconomicProjectName(incomingProject, customer));
+        project.setActive(true);
+        em.persist(project);
+        return project;
+    }
+
+    private String resolveEconomicProjectName(CleaningProject incomingProject, EconomicCustomer customer) {
+        if (incomingProject != null && incomingProject.getName() != null && !incomingProject.getName().isBlank()) {
+            return incomingProject.getName().trim();
+        }
+
+        String customerName = customer.getName() == null || customer.getName().isBlank()
+                ? "Cleaning customer " + customer.getCustomerNumber()
+                : customer.getName().trim();
+        return customerName + " cleaning project";
     }
 
     private String resolveProjectName(CleaningProject incomingProject, User client) {
@@ -248,5 +334,59 @@ public class CleaningAppointmentDAO implements IDAO<CleaningAppointment> {
             }
         }
         return existing;
+    }
+
+    private void applyTaskTemplateToFutureAssignments(EntityManager em, CleaningAppointment source) {
+        if (source.getProject() == null || source.getProject().getId() == null || source.getAppointmentTime() == null) {
+            return;
+        }
+
+        List<CleaningAppointment> futureAppointments = em.createQuery(
+                        "SELECT DISTINCT ca FROM CleaningAppointment ca " +
+                                "LEFT JOIN FETCH ca.tasks " +
+                                "WHERE ca.project.id = :projectId " +
+                                "AND ca.id <> :sourceId " +
+                                "AND ca.appointmentTime > :sourceTime " +
+                                "ORDER BY ca.appointmentTime",
+                        CleaningAppointment.class)
+                .setParameter("projectId", source.getProject().getId())
+                .setParameter("sourceId", source.getId())
+                .setParameter("sourceTime", source.getAppointmentTime())
+                .getResultList();
+
+        for (CleaningAppointment futureAppointment : futureAppointments) {
+            replaceTasksFromTemplate(futureAppointment, source.getTasks());
+        }
+    }
+
+    private void replaceTasksFromTemplate(CleaningAppointment appointment, List<CleaningAssignmentTask> templateTasks) {
+        Map<String, Boolean> completedByTitle = appointment.getTasks().stream()
+                .filter(task -> task.getTitle() != null)
+                .collect(Collectors.toMap(
+                        task -> normalizeTaskTitle(task.getTitle()),
+                        CleaningAssignmentTask::isCompleted,
+                        (first, ignored) -> first
+                ));
+
+        List<CleaningAssignmentTask> nextTasks = templateTasks.stream()
+                .filter(task -> task.getTitle() != null && !task.getTitle().isBlank())
+                .sorted(Comparator.comparingInt(CleaningAssignmentTask::getSortOrder))
+                .map(task -> {
+                    CleaningAssignmentTask nextTask = new CleaningAssignmentTask();
+                    nextTask.setAppointment(appointment);
+                    nextTask.setTitle(task.getTitle().trim());
+                    nextTask.setSortOrder(task.getSortOrder());
+                    nextTask.setCompleted(completedByTitle.getOrDefault(normalizeTaskTitle(task.getTitle()), false));
+                    return nextTask;
+                })
+                .filter(task -> !Objects.equals(task.getTitle(), ""))
+                .toList();
+
+        appointment.getTasks().clear();
+        appointment.getTasks().addAll(nextTasks);
+    }
+
+    private String normalizeTaskTitle(String title) {
+        return title == null ? "" : title.trim().toLowerCase(Locale.ROOT);
     }
 }

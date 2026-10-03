@@ -91,7 +91,10 @@ public class CleaningAppointmentRoutes {
         dto.setId(id);
         applyAuthenticatedUserRules(dto, authenticatedUser);
         CleaningAppointment appointment = cleaningAppointmentMapper.fromDto(dto);
-        CleaningAppointment updated = cleaningAppointmentService.update(appointment);
+        CleaningAppointment updated = cleaningAppointmentService.update(
+                appointment,
+                dto.isApplyTaskEditsToFutureAssignments()
+        );
         ctx.json(cleaningAppointmentMapper.toDto(updated));
     }
 

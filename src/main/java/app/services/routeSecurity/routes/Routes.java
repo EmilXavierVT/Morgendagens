@@ -80,7 +80,7 @@ public class Routes {
             });
 
             path("/economic/customer", () -> {
-                get("/all", economicCustomerRoutes::getAll, Role.ADMIN);
+                get("/all", economicCustomerRoutes::getAll, Role.ADMIN, Role.CLEANING_STAFF);
             });
 
             path("/product-in-requests", () -> {

@@ -19,11 +19,14 @@ public class CleaningAppointmentDTO {
     private Long id;
     private Long cleaningClientId;
     private Long cleaningStaffId;
+    private Integer economicCustomerNumber;
+    private String economicCustomerName;
     private Long projectId;
     private String projectName;
     private LocalDateTime appointmentTime;
     private LocalDateTime cancellationTime;
     private int durationMinutes;
     private boolean vacation;
+    private boolean applyTaskEditsToFutureAssignments;
     private List<CleaningAssignmentTaskDTO> tasks = new ArrayList<>();
 }

@@ -20,7 +20,7 @@ public class CleaningAppointment implements IEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = true)
     @JoinColumn(name = "cleaning_client_id")
     @ToString.Exclude
     private User cleaningClient;

@@ -18,6 +18,7 @@ public final class HibernateConfig {
                 if (emf == null) {
                     emf = HibernateEmfBuilder.build(buildProps());
                     LegacyProductCatalogMigration.migrate(emf);
+                    CleaningSchemaMigration.migrate(emf);
                     new EconomicMirrorSyncService(emf).syncAllSafely();
                 }
             }
