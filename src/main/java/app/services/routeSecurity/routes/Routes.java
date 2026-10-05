@@ -39,8 +39,10 @@ public class Routes {
         MessageRoutes messageRoutes = new MessageRoutes(emf);
         WorkLogRoutes workLogRoutes = new WorkLogRoutes(emf);
         CleaningAppointmentRoutes cleaningAppointmentRoutes = new CleaningAppointmentRoutes(emf);
+        CleaningInvoiceRoutes cleaningInvoiceRoutes = new CleaningInvoiceRoutes(emf);
         SubscriptionDealRoutes subscriptionDealRoutes = new SubscriptionDealRoutes(emf);
         YouthIslandBookingRoutes youthIslandBookingRoutes = new YouthIslandBookingRoutes(emf);
+        YouthIslandInvoiceRoutes youthIslandInvoiceRoutes = new YouthIslandInvoiceRoutes(emf);
         EmailRoutes emailRoutes = new EmailRoutes();
         SystemController systemController = new SystemController();
 
@@ -65,6 +67,7 @@ public class Routes {
                 put("/{id}/admin", userRoutes::setAdmin, Role.ADMIN);
                 put("/{id}/employee", userRoutes::setEmployee, Role.ADMIN);
                 put("/{id}/cleaning-staff", userRoutes::setCleaningStaff, Role.ADMIN);
+                put("/{id}/cleaning-manager", userRoutes::setCleaningManager, Role.ADMIN);
                 put("/{id}/cleaning-client", userRoutes::setCleaningClient, Role.ADMIN);
                 put("/{id}/subscriber", userRoutes::setSubscriber, Role.ADMIN);
                 put("/{id}/flex", userRoutes::setFlex, Role.ADMIN);
@@ -80,7 +83,7 @@ public class Routes {
             });
 
             path("/economic/customer", () -> {
-                get("/all", economicCustomerRoutes::getAll, Role.ADMIN, Role.CLEANING_STAFF);
+                get("/all", economicCustomerRoutes::getAll, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_MANAGER);
             });
 
             path("/product-in-requests", () -> {
@@ -118,11 +121,21 @@ public class Routes {
             });
 
             path("/cleaning-appointment", () -> {
-                get("/all", cleaningAppointmentRoutes::getAll, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_CLIENT);
-                post("/", cleaningAppointmentRoutes::create, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_CLIENT);
-                get("/{id}", cleaningAppointmentRoutes::getById, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_CLIENT);
-                put("/{id}", cleaningAppointmentRoutes::update, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_CLIENT);
-                delete("/{id}", cleaningAppointmentRoutes::delete, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_CLIENT);
+                get("/all", cleaningAppointmentRoutes::getAll, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_MANAGER, Role.CLEANING_CLIENT);
+                post("/", cleaningAppointmentRoutes::create, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_MANAGER, Role.CLEANING_CLIENT);
+                get("/{id}", cleaningAppointmentRoutes::getById, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_MANAGER, Role.CLEANING_CLIENT);
+                put("/{id}", cleaningAppointmentRoutes::update, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_MANAGER, Role.CLEANING_CLIENT);
+                delete("/{id}", cleaningAppointmentRoutes::delete, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_MANAGER, Role.CLEANING_CLIENT);
+            });
+
+            path("/cleaning-invoice", () -> {
+                post("/preview", cleaningInvoiceRoutes::preview, Role.ADMIN);
+                post("/create", cleaningInvoiceRoutes::create, Role.ADMIN);
+            });
+
+            path("/youth-island-invoice", () -> {
+                post("/preview", youthIslandInvoiceRoutes::preview, Role.ADMIN);
+                post("/create", youthIslandInvoiceRoutes::create, Role.ADMIN);
             });
 
             path("/email", () -> {
@@ -130,11 +143,11 @@ public class Routes {
             });
 
             path("/subscription-deal", () -> {
-                get("/all", subscriptionDealRoutes::getAll, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF);
-                post("/", subscriptionDealRoutes::create, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF);
-                get("/{id}", subscriptionDealRoutes::getById, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF);
-                put("/{id}", subscriptionDealRoutes::update, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF);
-                delete("/{id}", subscriptionDealRoutes::delete, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF);
+                get("/all", subscriptionDealRoutes::getAll, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF, Role.CLEANING_MANAGER);
+                post("/", subscriptionDealRoutes::create, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF, Role.CLEANING_MANAGER);
+                get("/{id}", subscriptionDealRoutes::getById, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF, Role.CLEANING_MANAGER);
+                put("/{id}", subscriptionDealRoutes::update, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF, Role.CLEANING_MANAGER);
+                delete("/{id}", subscriptionDealRoutes::delete, Role.ADMIN, Role.SUBSCRIBER, Role.CLEANING_STAFF, Role.CLEANING_MANAGER);
             });
 
             path("/youth-island-booking", () -> {
@@ -160,7 +173,7 @@ public class Routes {
                 on.put("msg","HELLO FROM THHE RESTRICTED AREA");
                 post("register", securityController::register );
                 post("login", securityController::login );
-                put("change-password", securityController::changePassword, Role.USER, Role.ADMIN, Role.EMPLOYEE, Role.CLEANING_STAFF, Role.CLEANING_CLIENT, Role.SUBSCRIBER, Role.FLEX, Role.YOUTH_ISLAND);
+                put("change-password", securityController::changePassword, Role.USER, Role.ADMIN, Role.EMPLOYEE, Role.CLEANING_STAFF, Role.CLEANING_MANAGER, Role.CLEANING_CLIENT, Role.SUBSCRIBER, Role.FLEX, Role.YOUTH_ISLAND);
                 get("protected",ctx->ctx.json(on).status(200),Role.USER);
             });
             default -> throw new IllegalArgumentException("Unknown resource name: " + resourceName);
@@ -168,7 +181,7 @@ public class Routes {
     }
 
     public enum Role implements RouteRole {
-        ANYONE,USER,ADMIN,EMPLOYEE,CLEANING_STAFF,CLEANING_CLIENT,SUBSCRIBER,FLEX,YOUTH_ISLAND
+        ANYONE,USER,ADMIN,EMPLOYEE,CLEANING_STAFF,CLEANING_MANAGER,CLEANING_CLIENT,SUBSCRIBER,FLEX,YOUTH_ISLAND
     }
 
 }

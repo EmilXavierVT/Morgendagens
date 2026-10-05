@@ -20,8 +20,10 @@ final class EntityRegistry {
         configuration.addAnnotatedClass(CleaningAppointment.class);
         configuration.addAnnotatedClass(CleaningProject.class);
         configuration.addAnnotatedClass(CleaningAssignmentTask.class);
+        configuration.addAnnotatedClass(CleaningInvoiceRecord.class);
         configuration.addAnnotatedClass(SubscriptionDeal.class);
         configuration.addAnnotatedClass(YouthIslandBooking.class);
         configuration.addAnnotatedClass(YouthIslandBookingItem.class);
+        configuration.addAnnotatedClass(YouthIslandInvoiceRecord.class);
     }
 }

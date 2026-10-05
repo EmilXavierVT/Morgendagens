@@ -130,7 +130,9 @@ public class SubscriptionDealRoutes {
     }
 
     private boolean hasFullAccess(UserDTO authenticatedUser) {
-        return hasRole(authenticatedUser, "ADMIN") || hasRole(authenticatedUser, "CLEANING_STAFF");
+        return hasRole(authenticatedUser, "ADMIN")
+                || hasRole(authenticatedUser, "CLEANING_STAFF")
+                || hasRole(authenticatedUser, "CLEANING_MANAGER");
     }
 
     private boolean hasRole(UserDTO authenticatedUser, String roleName) {

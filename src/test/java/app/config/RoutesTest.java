@@ -371,6 +371,20 @@ class RoutesTest {
     }
 
     @Test
+    void set_cleaning_manager_adds_cleaning_manager_role_to_user() {
+        long tenantId = createTenantId("tenant-user-cleaning-manager");
+        long userId = createUserId(tenantId, "Manager", "Candidate", "cleaning.manager.role." + System.nanoTime() + "@example.com");
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().put("/user/{id}/cleaning-manager", userId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) userId))
+                .body("roles", hasItems("USER", "CLEANING_MANAGER"));
+    }
+
+    @Test
     void set_cleaning_client_adds_cleaning_client_role_to_user() {
         long tenantId = createTenantId("tenant-user-cleaning-client");
         long userId = createUserId(tenantId, "Client", "Candidate", "cleaning.client.role." + System.nanoTime() + "@example.com");

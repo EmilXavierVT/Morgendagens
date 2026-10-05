@@ -30,7 +30,7 @@ public class CleaningAppointmentRoutes {
         UserDTO authenticatedUser = ctx.attribute("user");
         List<CleaningAppointmentDTO> dtos = new ArrayList<>();
 
-        if (isAdmin(authenticatedUser)) {
+        if (hasFullAccess(authenticatedUser)) {
             for (CleaningAppointment appointment : cleaningAppointmentService.getAll()) {
                 dtos.add(cleaningAppointmentMapper.toDto(appointment));
             }
@@ -117,7 +117,7 @@ public class CleaningAppointmentRoutes {
             throw new ApiException(401, "Not authenticated");
         }
 
-        if (isAdmin(authenticatedUser)) {
+        if (hasFullAccess(authenticatedUser)) {
             return;
         }
 
@@ -143,17 +143,18 @@ public class CleaningAppointmentRoutes {
         }
     }
 
-    private boolean isAdmin(UserDTO authenticatedUser) {
-        return hasRole(authenticatedUser, "ADMIN");
+    private boolean hasFullAccess(UserDTO authenticatedUser) {
+        return hasRole(authenticatedUser, "ADMIN") || hasRole(authenticatedUser, "CLEANING_MANAGER");
     }
 
     private void ensureOwnership(CleaningAppointment appointment, UserDTO authenticatedUser, String message) {
-        if (isAdmin(authenticatedUser)) {
+        if (hasFullAccess(authenticatedUser)) {
             return;
         }
 
         User currentUser = getCurrentUser(authenticatedUser);
         boolean ownsAsClient = hasRole(authenticatedUser, "CLEANING_CLIENT")
+                && appointment.getCleaningClient() != null
                 && appointment.getCleaningClient().getId().equals(currentUser.getId());
         boolean ownsAsStaff = hasRole(authenticatedUser, "CLEANING_STAFF")
                 && (appointment.getCleaningStaff() == null
