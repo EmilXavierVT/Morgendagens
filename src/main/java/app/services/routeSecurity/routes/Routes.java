@@ -122,6 +122,7 @@ public class Routes {
 
             path("/cleaning-appointment", () -> {
                 get("/all", cleaningAppointmentRoutes::getAll, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_MANAGER, Role.CLEANING_CLIENT);
+                post("/sync-sheets", cleaningAppointmentRoutes::syncSheets, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_MANAGER);
                 post("/", cleaningAppointmentRoutes::create, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_MANAGER, Role.CLEANING_CLIENT);
                 get("/{id}", cleaningAppointmentRoutes::getById, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_MANAGER, Role.CLEANING_CLIENT);
                 put("/{id}", cleaningAppointmentRoutes::update, Role.ADMIN, Role.CLEANING_STAFF, Role.CLEANING_MANAGER, Role.CLEANING_CLIENT);

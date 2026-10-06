@@ -2,13 +2,11 @@ package app.services.entityServices;
 
 import app.dao.CleaningAppointmentDAO;
 import app.dao.UserDAO;
-import app.entities.CleaningAssignmentTask;
 import app.entities.CleaningAppointment;
 import app.entities.User;
 import app.exceptions.ApiException;
 import jakarta.persistence.EntityManagerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -93,7 +91,6 @@ public class CleaningAppointmentService implements CrudService<CleaningAppointme
         } else {
             appointment.setCleaningClient(null);
         }
-        ensureDefaultTasks(appointment);
 
         if (appointment.getCleaningStaff() == null || appointment.getCleaningStaff().getId() == null) {
             appointment.setCleaningStaff(null);
@@ -104,31 +101,13 @@ public class CleaningAppointmentService implements CrudService<CleaningAppointme
         if (staff == null) {
             throw new ApiException(404, "Cleaning staff user not found");
         }
-        if (staff.getRolesAsStrings().stream().noneMatch(role -> role.equalsIgnoreCase("CLEANING_STAFF"))) {
-            throw new ApiException(400, "User must have CLEANING_STAFF role");
+        if (staff.getRolesAsStrings().stream().noneMatch(role -> (
+                role.equalsIgnoreCase("CLEANING_STAFF")
+                        || role.equalsIgnoreCase("CLEANING_MANAGER")
+        ))) {
+            throw new ApiException(400, "User must have CLEANING_STAFF or CLEANING_MANAGER role");
         }
 
         appointment.setCleaningStaff(staff);
-    }
-
-    private void ensureDefaultTasks(CleaningAppointment appointment) {
-        if (appointment.getTasks() != null && !appointment.getTasks().isEmpty()) {
-            return;
-        }
-
-        List<CleaningAssignmentTask> defaultTasks = new ArrayList<>();
-        defaultTasks.add(buildTask("Kitchen surfaces", 1));
-        defaultTasks.add(buildTask("Bathroom reset", 2));
-        defaultTasks.add(buildTask("Floors", 3));
-        defaultTasks.add(buildTask("Final walkthrough", 4));
-        appointment.setTasks(defaultTasks);
-    }
-
-    private CleaningAssignmentTask buildTask(String title, int sortOrder) {
-        CleaningAssignmentTask task = new CleaningAssignmentTask();
-        task.setTitle(title);
-        task.setSortOrder(sortOrder);
-        task.setCompleted(false);
-        return task;
     }
 }

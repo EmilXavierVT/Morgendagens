@@ -9,6 +9,7 @@ import app.exceptions.ApiException;
 import jakarta.persistence.EntityManagerFactory;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -71,6 +72,14 @@ public class YouthIslandBookingService implements CrudService<YouthIslandBooking
         }
         if (isBlank(booking.getCustomerName())) throw new ApiException(400, "customerName is required");
         if (booking.getEventDate() == null) throw new ApiException(400, "eventDate is required");
+        LocalDateTime start = booking.getStartDateTime();
+        LocalDateTime end = booking.getEndDateTime();
+        if (start == null || end == null) {
+            throw new ApiException(400, "startDateTime and endDateTime are required");
+        }
+        if (!end.isAfter(start)) {
+            throw new ApiException(400, "endDateTime must be after startDateTime");
+        }
         if (isBlank(booking.getSpectraReservationNumber())) {
             throw new ApiException(400, "spectraReservationNumber is required");
         }

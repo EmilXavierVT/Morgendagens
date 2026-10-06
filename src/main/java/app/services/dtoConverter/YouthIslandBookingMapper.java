@@ -6,6 +6,7 @@ import app.entities.User;
 import app.entities.YouthIslandBooking;
 import app.entities.YouthIslandBookingItem;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,6 +18,8 @@ public class YouthIslandBookingMapper {
         dto.setId(booking.getId());
         dto.setCustomerName(booking.getCustomerName());
         dto.setEventDate(booking.getEventDate());
+        dto.setStartDateTime(booking.getStartDateTime());
+        dto.setEndDateTime(booking.getEndDateTime());
         dto.setAllergies(booking.getAllergies());
         dto.setLocation(booking.getLocation());
         dto.setSpectraReservationNumber(booking.getSpectraReservationNumber());
@@ -55,10 +58,16 @@ public class YouthIslandBookingMapper {
     public YouthIslandBooking fromDto(YouthIslandBookingDTO dto) {
         if (dto == null) return null;
 
+        LocalDate eventDate = dto.getStartDateTime() != null
+                ? dto.getStartDateTime().toLocalDate()
+                : dto.getEventDate();
+
         YouthIslandBooking booking = YouthIslandBooking.builder()
                 .id(dto.getId())
                 .customerName(trimToNull(dto.getCustomerName()))
-                .eventDate(dto.getEventDate())
+                .eventDate(eventDate)
+                .startDateTime(dto.getStartDateTime())
+                .endDateTime(dto.getEndDateTime())
                 .allergies(trimToNull(dto.getAllergies()))
                 .location(trimToNull(dto.getLocation()))
                 .spectraReservationNumber(trimToNull(dto.getSpectraReservationNumber()))

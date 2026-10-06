@@ -11,6 +11,7 @@ import app.services.entityServices.YouthIslandBookingService;
 import io.javalin.http.Context;
 import jakarta.persistence.EntityManagerFactory;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,6 +61,7 @@ public class YouthIslandBookingRoutes {
         booking.setCreatedAt(null);
         booking.setOrderedBy(currentUser);
         booking.getItems().forEach(item -> item.setId(null));
+        normalizeBookingDates(booking);
 
         YouthIslandBooking created = bookingService.create(booking);
         ctx.status(201).json(bookingMapper.toDto(created));
@@ -78,9 +80,25 @@ public class YouthIslandBookingRoutes {
         booking.setOrderedBy(existing.getOrderedBy());
         booking.setCreatedAt(existing.getCreatedAt());
         booking.getItems().forEach(item -> item.setId(null));
+        normalizeBookingDates(booking);
 
         YouthIslandBooking updated = bookingService.update(booking);
         ctx.json(bookingMapper.toDto(updated));
+    }
+
+    private void normalizeBookingDates(YouthIslandBooking booking) {
+        LocalDateTime start = booking.getStartDateTime();
+        LocalDateTime end = booking.getEndDateTime();
+
+        if (start == null || end == null) {
+            throw new ApiException(400, "Youth Island bookings must have a start and end datetime");
+        }
+
+        if (!end.isAfter(start)) {
+            throw new ApiException(400, "Booking end datetime must be after the start datetime");
+        }
+
+        booking.setEventDate(start.toLocalDate());
     }
 
     private UserDTO requireAuthenticatedUser(Context ctx) {

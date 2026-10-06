@@ -58,6 +58,8 @@ public class YouthIslandBookingDAO implements IDAO<YouthIslandBooking> {
 
             managed.setCustomerName(booking.getCustomerName());
             managed.setEventDate(booking.getEventDate());
+            managed.setStartDateTime(booking.getStartDateTime());
+            managed.setEndDateTime(booking.getEndDateTime());
             managed.setAllergies(booking.getAllergies());
             managed.setLocation(booking.getLocation());
             managed.setSpectraReservationNumber(booking.getSpectraReservationNumber());

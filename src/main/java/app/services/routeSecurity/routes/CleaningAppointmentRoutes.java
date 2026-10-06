@@ -5,6 +5,7 @@ import app.dto.UserDTO;
 import app.entities.CleaningAppointment;
 import app.entities.User;
 import app.exceptions.ApiException;
+import app.services.cleaning.CleaningSheetSyncService;
 import app.services.dtoConverter.CleaningAppointmentMapper;
 import app.services.entityServices.CleaningAppointmentService;
 import app.services.entityServices.UserService;
@@ -17,12 +18,14 @@ import java.util.List;
 public class CleaningAppointmentRoutes {
     private final CleaningAppointmentService cleaningAppointmentService;
     private final CleaningAppointmentMapper cleaningAppointmentMapper;
+    private final CleaningSheetSyncService cleaningSheetSyncService;
     private final UserService userService;
 
     public CleaningAppointmentRoutes(EntityManagerFactory emf) {
         if (emf == null) throw new IllegalArgumentException("EntityManagerFactory cannot be null");
         this.cleaningAppointmentService = new CleaningAppointmentService(emf);
         this.cleaningAppointmentMapper = new CleaningAppointmentMapper();
+        this.cleaningSheetSyncService = new CleaningSheetSyncService(emf);
         this.userService = new UserService(emf);
     }
 
@@ -42,6 +45,17 @@ public class CleaningAppointmentRoutes {
         if (hasRole(authenticatedUser, "CLEANING_CLIENT")) {
             for (CleaningAppointment appointment : cleaningAppointmentService.getByCleaningClientId(currentUser.getId())) {
                 dtos.add(cleaningAppointmentMapper.toDto(appointment));
+            }
+            ctx.json(dtos);
+            return;
+        }
+
+        if (hasRole(authenticatedUser, "CLEANING_STAFF")) {
+            for (CleaningAppointment appointment : cleaningAppointmentService.getAll()) {
+                if (appointment.getCleaningStaff() != null
+                        && appointment.getCleaningStaff().getId().equals(currentUser.getId())) {
+                    dtos.add(cleaningAppointmentMapper.toDto(appointment));
+                }
             }
             ctx.json(dtos);
             return;
@@ -112,6 +126,10 @@ public class CleaningAppointmentRoutes {
         ctx.status(204);
     }
 
+    public void syncSheets(Context ctx) {
+        ctx.json(cleaningSheetSyncService.sync());
+    }
+
     private void applyAuthenticatedUserRules(CleaningAppointmentDTO dto, UserDTO authenticatedUser) {
         if (authenticatedUser == null) {
             throw new ApiException(401, "Not authenticated");
@@ -157,8 +175,8 @@ public class CleaningAppointmentRoutes {
                 && appointment.getCleaningClient() != null
                 && appointment.getCleaningClient().getId().equals(currentUser.getId());
         boolean ownsAsStaff = hasRole(authenticatedUser, "CLEANING_STAFF")
-                && (appointment.getCleaningStaff() == null
-                || appointment.getCleaningStaff().getId().equals(currentUser.getId()));
+                && appointment.getCleaningStaff() != null
+                && appointment.getCleaningStaff().getId().equals(currentUser.getId());
 
         if (!ownsAsClient && !ownsAsStaff) {
             throw new ApiException(403, message);

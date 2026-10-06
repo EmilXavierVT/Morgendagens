@@ -50,6 +50,12 @@ public class YouthIslandBooking implements IEntity {
     @Column(nullable = false)
     private LocalDate eventDate;
 
+    @Column
+    private LocalDateTime startDateTime;
+
+    @Column
+    private LocalDateTime endDateTime;
+
     @Column(columnDefinition = "text")
     private String allergies;
 

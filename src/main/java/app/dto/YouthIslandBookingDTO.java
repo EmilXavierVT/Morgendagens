@@ -23,6 +23,8 @@ public class YouthIslandBookingDTO {
     private String orderedByEmail;
     private String customerName;
     private LocalDate eventDate;
+    private LocalDateTime startDateTime;
+    private LocalDateTime endDateTime;
     private String allergies;
     private String location;
     private String spectraReservationNumber;

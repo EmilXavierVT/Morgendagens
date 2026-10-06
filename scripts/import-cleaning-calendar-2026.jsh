@@ -9,7 +9,7 @@ Map<String, Integer> customerNumbers = new LinkedHashMap<>();
 customerNumbers.put("monica", 12);
 customerNumbers.put("pia", 13);
 customerNumbers.put("lise", 14);
-customerNumbers.put("maria", 19);
+customerNumbers.put("maria", 15);
 customerNumbers.put("martin", 16);
 customerNumbers.put("rasmus", 17);
 customerNumbers.put("martin & carina", 18);

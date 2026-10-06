@@ -708,7 +708,7 @@ class RoutesTest {
     }
 
     @Test
-    void cleaning_staff_can_see_unassigned_appointments() {
+    void cleaning_staff_cannot_see_unassigned_appointments() {
         String staffEmail = "cleaning.staff.unassigned." + System.nanoTime() + "@example.com";
         long tenantId = createTenantId("tenant-cleaning-staff-unassigned");
         long cleaningStaffId = createUserId(tenantId, "Cleaning", "Staff", staffEmail);
@@ -741,15 +741,81 @@ class RoutesTest {
                 .when().get("/cleaning-appointment/all")
                 .then()
                 .statusCode(200)
-                .body("id", hasItem((int) appointmentId));
+                .body("id", not(hasItem((int) appointmentId)));
 
         given()
                 .header("Authorization", "Bearer " + cleaningStaffToken)
                 .when().get("/cleaning-appointment/{id}", appointmentId)
                 .then()
+                .statusCode(403)
+                .body("msg", equalTo("You can only access your own appointments"));
+    }
+
+    @Test
+    void cleaning_manager_can_check_tasks_for_any_staff_appointment() {
+        String managerEmail = "cleaning.manager.tasks." + System.nanoTime() + "@example.com";
+        long tenantId = createTenantId("tenant-cleaning-manager-tasks");
+        long cleaningManagerId = createUserId(tenantId, "Cleaning", "Manager", managerEmail);
+        long cleaningStaffId = createUserId(tenantId, "Cleaning", "Staff", "cleaning.staff.manager.tasks." + System.nanoTime() + "@example.com");
+        long cleaningClientId = createUserId(tenantId, "Cleaning", "Client", "cleaning.client.manager.tasks." + System.nanoTime() + "@example.com");
+        assignCleaningManagerRole(cleaningManagerId);
+        assignCleaningStaffRole(cleaningStaffId);
+        String cleaningManagerToken = loginAndGetToken(managerEmail, "secret");
+
+        Number appointmentIdNumber = given()
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "cleaningClientId": %d,
+                          "cleaningStaffId": %d,
+                          "appointmentTime": "2026-03-13T09:00:00",
+                          "cancellationTime": null,
+                          "durationMinutes": 120,
+                          "vacation": false,
+                          "tasks": [
+                            {
+                              "title": "Kitchen reset",
+                              "completed": false,
+                              "sortOrder": 1
+                            }
+                          ]
+                        }
+                        """.formatted(cleaningClientId, cleaningStaffId))
+                .when().post("/cleaning-appointment/")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("id");
+        long appointmentId = appointmentIdNumber.longValue();
+
+        given()
+                .header("Authorization", "Bearer " + cleaningManagerToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "cleaningClientId": %d,
+                          "cleaningStaffId": %d,
+                          "appointmentTime": "2026-03-13T09:00:00",
+                          "cancellationTime": null,
+                          "durationMinutes": 120,
+                          "vacation": false,
+                          "tasks": [
+                            {
+                              "title": "Kitchen reset",
+                              "completed": true,
+                              "sortOrder": 1
+                            }
+                          ]
+                        }
+                        """.formatted(cleaningClientId, cleaningStaffId))
+                .when().put("/cleaning-appointment/{id}", appointmentId)
+                .then()
                 .statusCode(200)
                 .body("id", equalTo((int) appointmentId))
-                .body("cleaningStaffId", nullValue());
+                .body("cleaningStaffId", equalTo((int) cleaningStaffId))
+                .body("tasks[0].title", equalTo("Kitchen reset"))
+                .body("tasks[0].completed", equalTo(true));
     }
 
     @Test
@@ -1197,6 +1263,8 @@ class RoutesTest {
                         {
                           "customerName": "Bestyrelsesmoede MGF FUO",
                           "eventDate": "2026-10-05",
+                          "startDateTime": "2026-10-05T17:30:00",
+                          "endDateTime": "2026-10-05T21:00:00",
                           "allergies": "No nuts",
                           "location": "Ungdomsoen",
                           "spectraReservationNumber": "%s",
@@ -1229,6 +1297,9 @@ class RoutesTest {
                 .body("id", notNullValue())
                 .body("orderedByUserId", equalTo((int) youthUserId))
                 .body("orderedByName", equalTo("Anne Ungdomsoen"))
+                .body("eventDate", equalTo("2026-10-05"))
+                .body("startDateTime", equalTo("2026-10-05T17:30:00"))
+                .body("endDateTime", equalTo("2026-10-05T21:00:00"))
                 .body("totalGuests", equalTo(31))
                 .body("items", hasSize(2))
                 .body("items[0].productNumber", equalTo("YI-2026-MAIN"))
@@ -1240,6 +1311,8 @@ class RoutesTest {
                 {
                   "customerName": "Bestyrelsesmoede MGF FUO - updated",
                   "eventDate": "2026-10-06",
+                  "startDateTime": "2026-10-06T18:00:00",
+                  "endDateTime": "2026-10-06T22:30:00",
                   "allergies": "No nuts or shellfish",
                   "location": "Artilleri",
                   "spectraReservationNumber": "%s",
@@ -1269,6 +1342,9 @@ class RoutesTest {
                 .body("id", equalTo((int) bookingId))
                 .body("orderedByUserId", equalTo((int) youthUserId))
                 .body("customerName", equalTo("Bestyrelsesmoede MGF FUO - updated"))
+                .body("eventDate", equalTo("2026-10-06"))
+                .body("startDateTime", equalTo("2026-10-06T18:00:00"))
+                .body("endDateTime", equalTo("2026-10-06T22:30:00"))
                 .body("totalGuests", equalTo(25))
                 .body("items", hasSize(1))
                 .body("items[0].productNumber", equalTo("YI-2026-MAIN-UPDATED"))
@@ -1384,6 +1460,14 @@ class RoutesTest {
         given()
                 .header("Authorization", "Bearer " + adminToken)
                 .when().put("/user/{id}/cleaning-staff", userId)
+                .then()
+                .statusCode(200);
+    }
+
+    private static void assignCleaningManagerRole(long userId) {
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .when().put("/user/{id}/cleaning-manager", userId)
                 .then()
                 .statusCode(200);
     }
