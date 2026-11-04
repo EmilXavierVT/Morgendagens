@@ -2,6 +2,7 @@ package app.config;
 
 import app.entities.*;
 import app.services.entityServices.*;
+import app.services.economic.YouthIslandInvoiceService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -10,8 +11,11 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityManager;
+import java.math.BigDecimal;
 import java.sql.Time;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Properties;
@@ -60,6 +64,92 @@ class ServiceCrudIntegrationTest {
     static void teardown() {
         if (emf != null) {
             emf.close();
+        }
+    }
+
+    @Test
+    void youth_island_special_serving_uses_deployed_product_price_override_in_invoice_preview() {
+        try (EntityManager em = emf.createEntityManager()) {
+            em.getTransaction().begin();
+            Tenant tenant = Tenant.builder().name("youth-special").type("test").status(1).build();
+            em.persist(tenant);
+            User user = new User("youth-special@example.test", "test-password");
+            user.setTenant(tenant);
+            em.persist(user);
+            em.persist(Product.builder().name("DIVERSE SALG").economicProductNumber("1019")
+                    .economicAvailable(true).price(0).type(2).build());
+            em.persist(Product.builder().name("Regular meal").economicProductNumber("YI-REGULAR")
+                    .economicAvailable(true).price(100).type(2).build());
+            em.persist(EconomicCustomer.builder().name("Ungdomsø Event").customerNumber(12345)
+                    .economicAvailable(true).build());
+            YouthIslandBooking booking = YouthIslandBooking.builder()
+                    .orderedBy(user).customerName("Special serving regression")
+                    .eventDate(LocalDate.of(2026, 11, 4))
+                    .startDateTime(LocalDateTime.of(2026, 11, 4, 8, 0))
+                    .endDateTime(LocalDateTime.of(2026, 11, 5, 18, 0))
+                    .spectraReservationNumber("special-serving-regression")
+                    .orderDate(LocalDate.of(2026, 11, 1)).build();
+            booking.setItems(List.of(
+                    YouthIslandBookingItem.builder().guestCount(2).servingTime(LocalTime.of(8, 0))
+                            .servingDateTime(LocalDateTime.of(2026, 11, 5, 8, 0))
+                            .productNumber("1019").productName("Special breakfast")
+                            .unitPriceOverride(new BigDecimal("87.50")).build(),
+                    YouthIslandBookingItem.builder().guestCount(1).servingTime(LocalTime.of(9, 0))
+                            .servingDateTime(LocalDateTime.of(2026, 11, 5, 9, 0))
+                            .productNumber("DIVERSE").productName("Legacy special serving")
+                            .unitPriceOverride(new BigDecimal("50.00")).build(),
+                    YouthIslandBookingItem.builder().guestCount(1).servingTime(LocalTime.of(23, 0))
+                            .servingDateTime(LocalDateTime.of(2026, 11, 4, 23, 0))
+                            .productNumber("YI-REGULAR").productName("Evening meal").build()));
+            em.persist(booking);
+            em.getTransaction().commit();
+        }
+
+        var service = new YouthIslandInvoiceService(emf);
+        var discounted = service.preview("2026-11-04", 12345, true);
+        assertEquals(3, discounted.getLineCount());
+        assertEquals("Evening meal", discounted.getLines().get(0).getProductName());
+        assertEquals(LocalDateTime.of(2026, 11, 5, 8, 0), discounted.getLines().get(1).getServingDateTime());
+        assertEquals("1019", discounted.getLines().get(2).getProductNumber());
+        assertEquals(0, new BigDecimal("87.50").compareTo(discounted.getLines().get(1).getUnitNetPrice()));
+        assertEquals(0, new BigDecimal("217.75").compareTo(discounted.getTotalNetAmount()));
+        assertEquals(0, new BigDecimal("325.00").compareTo(service.preview("2026-11-04", 12345, false).getTotalNetAmount()));
+    }
+
+    @Test
+    void youth_serving_date_migration_backfills_legacy_times_without_changing_explicit_dates() {
+        Long legacyId;
+        Long datedId;
+        try (EntityManager em = emf.createEntityManager()) {
+            em.getTransaction().begin();
+            Tenant tenant = Tenant.builder().name("youth-date-migration").type("test").status(1).build();
+            em.persist(tenant);
+            User user = new User("youth-migration@example.test", "test-password");
+            user.setTenant(tenant);
+            em.persist(user);
+            YouthIslandBooking booking = YouthIslandBooking.builder().orderedBy(user)
+                    .customerName("Legacy date migration").eventDate(LocalDate.of(2026, 11, 4))
+                    .startDateTime(LocalDateTime.of(2026, 11, 4, 18, 0))
+                    .endDateTime(LocalDateTime.of(2026, 11, 5, 18, 0))
+                    .spectraReservationNumber("legacy-date-regression").orderDate(LocalDate.of(2026, 11, 1)).build();
+            YouthIslandBookingItem legacy = YouthIslandBookingItem.builder().guestCount(1)
+                    .servingTime(LocalTime.of(19, 15)).productNumber("TEST").productName("Legacy evening").build();
+            YouthIslandBookingItem dated = YouthIslandBookingItem.builder().guestCount(1)
+                    .servingTime(LocalTime.of(8, 0)).servingDateTime(LocalDateTime.of(2026, 11, 5, 8, 0))
+                    .productNumber("TEST").productName("Next morning").build();
+            booking.setItems(List.of(legacy, dated));
+            em.persist(booking);
+            em.getTransaction().commit();
+            legacyId = legacy.getId();
+            datedId = dated.getId();
+        }
+        CleaningSchemaMigration.migrate(emf);
+        CleaningSchemaMigration.migrate(emf);
+        try (EntityManager em = emf.createEntityManager()) {
+            assertEquals(Boolean.TRUE, em.createNativeQuery("SELECT serving_date_time = TIMESTAMP '2026-11-04 19:15:00' FROM youth_island_booking_items WHERE id = :id")
+                    .setParameter("id", legacyId).getSingleResult());
+            assertEquals(Boolean.TRUE, em.createNativeQuery("SELECT serving_date_time = TIMESTAMP '2026-11-05 08:00:00' FROM youth_island_booking_items WHERE id = :id")
+                    .setParameter("id", datedId).getSingleResult());
         }
     }
 

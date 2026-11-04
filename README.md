@@ -348,6 +348,23 @@ Requests include weather forecast data for the request location.
 
 ---
 
+### Youth Island bookings
+
+`POST /api/youth-island-booking/` and `PUT /api/youth-island-booking/{id}` accept
+`servingDateTime` on every catering line, for example `2026-11-05T08:30:00`.
+Dates are local event dates without a timezone offset. Lines are ordered by their
+full date and time, including on multi-day bookings. Booking responses, invoice
+previews, and invoice descriptions preserve each line's serving date.
+
+The legacy `servingTime` field remains compatible: if no `servingDateTime` is sent,
+the booking's event date is combined with that time. Startup migration backfills
+existing time-only lines without overwriting explicit serving dates.
+
+Special servings use e-conomic product **1019 — DIVERSE SALG**, with an editable
+name and non-negative `unitPriceOverride`. Legacy `DIVERSE` lines remain supported
+and resolve to the available special-serving product when invoicing. The existing
+event discount also applies to the special price.
+
 ## Authentication & Security
 
 **Registration & Login flow:**

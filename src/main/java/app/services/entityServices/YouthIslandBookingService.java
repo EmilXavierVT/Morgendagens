@@ -15,8 +15,6 @@ import java.util.List;
 import java.util.Set;
 
 public class YouthIslandBookingService implements CrudService<YouthIslandBooking> {
-    private static final String DIVERSE_PRODUCT_NUMBER = "DIVERSE";
-
     private final YouthIslandBookingDAO bookingDAO;
     private final UserDAO userDAO;
 
@@ -106,10 +104,13 @@ public class YouthIslandBookingService implements CrudService<YouthIslandBooking
 
         for (YouthIslandBookingItem item : booking.getItems()) {
             if (item.getGuestCount() <= 0) throw new ApiException(400, "Each catering line needs at least one guest");
-            if (item.getServingTime() == null) throw new ApiException(400, "servingTime is required for every catering line");
+            LocalDateTime servingDateTime = item.getServingDateTime();
+            if (servingDateTime == null) throw new ApiException(400, "servingDateTime is required for every catering line");
+            item.setServingDateTime(servingDateTime);
+            item.setServingTime(servingDateTime.toLocalTime());
             if (isBlank(item.getProductNumber())) throw new ApiException(400, "productNumber is required for every catering line");
             if (isBlank(item.getProductName())) throw new ApiException(400, "productName is required for every catering line");
-            boolean diverseProduct = DIVERSE_PRODUCT_NUMBER.equalsIgnoreCase(item.getProductNumber().trim());
+            boolean diverseProduct = item.isSpecialServing();
             if (diverseProduct && item.getUnitPriceOverride() == null) {
                 throw new ApiException(400, "unitPriceOverride is required for DIVERSE catering lines");
             }

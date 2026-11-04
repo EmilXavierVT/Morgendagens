@@ -1445,7 +1445,7 @@ class RoutesTest {
                           "customerName": "Bestyrelsesmoede MGF FUO",
                           "eventDate": "2026-10-05",
                           "startDateTime": "2026-10-05T17:30:00",
-                          "endDateTime": "2026-10-05T21:00:00",
+                          "endDateTime": "2026-10-06T21:00:00",
                           "allergies": "No nuts",
                           "location": "Ungdomsoen",
                           "spectraReservationNumber": "%s",
@@ -1456,6 +1456,7 @@ class RoutesTest {
                             {
                               "guestCount": 20,
                               "servingTime": "17:45:00",
+                              "servingDateTime": "2026-10-05T17:45:00",
                               "productNumber": "YI-2026-MAIN",
                               "productName": "Youth Island vegetarian main",
                               "menu": "",
@@ -1463,8 +1464,8 @@ class RoutesTest {
                             },
                             {
                               "guestCount": 11,
-                              "servingTime": "19:15:00",
-                              "productNumber": "DIVERSE",
+                              "servingDateTime": "2026-10-06T08:15:00",
+                              "productNumber": "1019",
                               "productName": "Special dessert",
                               "unitPriceOverride": 87.50
                             }
@@ -1479,13 +1480,16 @@ class RoutesTest {
                 .body("orderedByName", equalTo("Anne Ungdomsoen"))
                 .body("eventDate", equalTo("2026-10-05"))
                 .body("startDateTime", equalTo("2026-10-05T17:30:00"))
-                .body("endDateTime", equalTo("2026-10-05T21:00:00"))
+                .body("endDateTime", equalTo("2026-10-06T21:00:00"))
                 .body("totalGuests", equalTo(31))
                 .body("items", hasSize(2))
                 .body("items[0].productNumber", equalTo("YI-2026-MAIN"))
+                .body("items[0].servingDateTime", equalTo("2026-10-05T17:45:00"))
                 .body("items[0].menu", nullValue())
                 .body("items[0].room", nullValue())
-                .body("items[1].productNumber", equalTo("DIVERSE"))
+                .body("items[1].productNumber", equalTo("1019"))
+                .body("items[1].servingDateTime", equalTo("2026-10-06T08:15:00"))
+                .body("items[1].servingTime", equalTo("08:15:00"))
                 .body("items[1].productName", equalTo("Special dessert"))
                 .body("items[1].unitPriceOverride", equalTo(87.50f))
                 .body("items[1].menu", nullValue())
@@ -1535,6 +1539,7 @@ class RoutesTest {
                 .body("totalGuests", equalTo(25))
                 .body("items", hasSize(1))
                 .body("items[0].productNumber", equalTo("YI-2026-MAIN-UPDATED"))
+                .body("items[0].servingDateTime", equalTo("2026-10-06T18:00:00"))
                 .body("items[0].productName", equalTo("Youth Island updated main"))
                 .body("editHistory", hasSize(1))
                 .body("editHistory[0].editedByUserId", equalTo((int) youthUserId))

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -16,6 +17,7 @@ public class YouthIslandBookingItemDTO {
     private Long id;
     private int guestCount;
     private LocalTime servingTime;
+    private LocalDateTime servingDateTime;
     private String productNumber;
     private String productName;
     private BigDecimal unitPriceOverride;

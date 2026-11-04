@@ -18,6 +18,7 @@ import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -43,6 +44,9 @@ public class YouthIslandBookingItem implements IEntity {
     @Column(nullable = false)
     private LocalTime servingTime;
 
+    @Column(name = "serving_date_time")
+    private LocalDateTime servingDateTime;
+
     @Column(name = "economic_product_number", length = 25)
     private String productNumber;
 
@@ -57,4 +61,17 @@ public class YouthIslandBookingItem implements IEntity {
 
     @Column
     private String room;
+
+    public LocalDateTime getServingDateTime() {
+        if (servingDateTime != null) return servingDateTime;
+        return servingTime != null && booking != null && booking.getEventDate() != null
+                ? booking.getEventDate().atTime(servingTime)
+                : null;
+    }
+
+    public boolean isSpecialServing() {
+        // 1019 is the deployed e-conomic "DIVERSE SALG" product; retain legacy bookings too.
+        return productNumber != null && ("1019".equals(productNumber.trim())
+                || "DIVERSE".equalsIgnoreCase(productNumber.trim()));
+    }
 }

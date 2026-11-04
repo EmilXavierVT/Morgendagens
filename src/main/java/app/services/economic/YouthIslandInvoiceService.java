@@ -34,7 +34,6 @@ public class YouthIslandInvoiceService {
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Europe/Copenhagen");
     private static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter DISPLAY_TIME = DateTimeFormatter.ofPattern("HH:mm");
-    private static final String DIVERSE_PRODUCT_NUMBER = "DIVERSE";
     private static final String STANDARD_EVENT_CUSTOMER_NAME = "ungdomsø event";
     private static final String LEGACY_STANDARD_EVENT_CUSTOMER_NAME = "ungdomsøen event #1";
     private static final BigDecimal EVENT_DISCOUNT_PERCENTAGE = BigDecimal.valueOf(33);
@@ -169,26 +168,33 @@ public class YouthIslandInvoiceService {
                 .map(YouthIslandBookingItem::getProductNumber)
                 .filter(productNumber -> productNumber != null && !productNumber.isBlank())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (bookings.stream().flatMap(booking -> booking.getItems().stream()).anyMatch(YouthIslandBookingItem::isSpecialServing)) {
+            productNumbers.add("1019");
+            productNumbers.add("DIVERSE");
+        }
         Map<String, Product> productsByNumber = findProducts(em, productNumbers);
 
         BatchCandidate batch = new BatchCandidate(periodStart, periodEnd, invoiceDate, customer);
         for (YouthIslandBooking booking : bookings) {
             EventCandidate event = new EventCandidate(booking, recordsByBooking.get(booking.getId()), discountPercentage);
             for (YouthIslandBookingItem item : booking.getItems().stream()
-                    .sorted(Comparator.comparing(YouthIslandBookingItem::getServingTime))
+                    .sorted(Comparator.comparing(YouthIslandBookingItem::getServingDateTime))
                     .toList()) {
                 Product product = productsByNumber.get(item.getProductNumber());
+                if (product == null && item.isSpecialServing()) {
+                    product = productsByNumber.getOrDefault("1019", productsByNumber.get("DIVERSE"));
+                }
                 if (product == null) {
                     throw new ApiException(400, "Missing available e-conomic product " + item.getProductNumber());
                 }
-                boolean diverseProduct = DIVERSE_PRODUCT_NUMBER.equalsIgnoreCase(item.getProductNumber().trim());
+                boolean diverseProduct = item.isSpecialServing();
                 if (diverseProduct && item.getUnitPriceOverride() == null) {
                     throw new ApiException(400, "DIVERSE booking line is missing its price override");
                 }
                 BigDecimal unitNetPrice = diverseProduct
                         ? money(item.getUnitPriceOverride())
                         : money(product.getPrice());
-                event.addLine(item, unitNetPrice);
+                event.addLine(item, unitNetPrice, product.getEconomicProductNumber());
             }
             batch.addEvent(event);
         }
@@ -377,7 +383,7 @@ public class YouthIslandInvoiceService {
             this.discountPercentage = Objects.requireNonNull(discountPercentage);
         }
 
-        private void addLine(YouthIslandBookingItem item, BigDecimal unitNetPrice) {
+        private void addLine(YouthIslandBookingItem item, BigDecimal unitNetPrice, String productNumber) {
             BigDecimal quantity = BigDecimal.valueOf(item.getGuestCount());
             BigDecimal lineNetAmount = quantity.multiply(unitNetPrice)
                     .multiply(ONE_HUNDRED.subtract(discountPercentage))
@@ -386,8 +392,9 @@ public class YouthIslandInvoiceService {
                     booking.getId(),
                     booking.getEventDate(),
                     item.getServingTime(),
+                    item.getServingDateTime(),
                     booking.getSpectraReservationNumber(),
-                    item.getProductNumber(),
+                    productNumber,
                     item.getProductName(),
                     item.getRoom(),
                     item.getGuestCount(),
@@ -410,9 +417,9 @@ public class YouthIslandInvoiceService {
         }
 
         private String invoiceLineDescription(YouthIslandInvoiceLineDTO line) {
-            String description = line.getProductName() + " " + line.getEventDate().format(DISPLAY_DATE)
+            String description = line.getProductName() + " " + line.getServingDateTime().format(DISPLAY_DATE)
                     + " kl. " + line.getServingTime().format(DISPLAY_TIME)
-                    + " - " + line.getRoom();
+                    + (line.getRoom() == null || line.getRoom().isBlank() ? "" : " - " + line.getRoom());
             return description.length() <= 255 ? description : description.substring(0, 255);
         }
 

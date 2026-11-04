@@ -79,7 +79,7 @@ public class YouthIslandBooking implements IEntity {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("servingTime ASC, id ASC")
+    @OrderBy("servingDateTime ASC, servingTime ASC, id ASC")
     @Builder.Default
     @ToString.Exclude
     private List<YouthIslandBookingItem> items = new ArrayList<>();

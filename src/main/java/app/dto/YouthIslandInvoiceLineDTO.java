@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -15,6 +16,7 @@ public class YouthIslandInvoiceLineDTO {
     private Long bookingId;
     private LocalDate eventDate;
     private LocalTime servingTime;
+    private LocalDateTime servingDateTime;
     private String spectraReservationNumber;
     private String productNumber;
     private String productName;
