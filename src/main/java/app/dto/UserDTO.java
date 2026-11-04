@@ -1,6 +1,7 @@
 package app.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,6 +26,7 @@ public class UserDTO {
     private int zipCode;
     private String email;
     private String phoneNumber;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     private List<Long> messageIds;
     Set<String> roles = new HashSet();
@@ -55,7 +57,7 @@ public class UserDTO {
     }
     public String toString() {
         String var10000 = this.getEmail();
-        return "UserDTO(email=" + var10000 + ", password=" + this.getPassword() + ", roles=" + this.getRoles() + ")";
+        return "UserDTO(email=" + var10000 + ", roles=" + this.getRoles() + ")";
     }
 
     public UserDTO(String email, String password, Set<String> roles) {

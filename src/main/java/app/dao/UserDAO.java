@@ -3,6 +3,7 @@ import app.entities.Message;
 import app.entities.Role;
 import app.entities.Tenant;
 import app.entities.User;
+import app.exceptions.ApiException;
 import app.exceptions.ValidationException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -60,10 +61,25 @@ public class UserDAO implements IDAO<User>,ISecurityDAO {
     public User update(User user) {
          try(EntityManager em = emf.createEntityManager()) {
              em.getTransaction().begin();
-             User updatedUser = em.merge(user);
-             em.getTransaction().commit();
-             return getByIdWithMessages(updatedUser.getId());
+             try {
+                 User updatedUser = em.merge(user);
+                 em.getTransaction().commit();
+                 return getByIdWithMessages(updatedUser.getId());
+             } catch (PersistenceException e) {
+                 if (em.getTransaction().isActive()) em.getTransaction().rollback();
+                 if (isConstraintViolation(e)) throw new ApiException(409, "User information conflicts with an existing account");
+                 throw e;
+             }
          }
+    }
+
+    public boolean isEmailInUse(String email, Long excludedId) {
+        try (EntityManager em = emf.createEntityManager()) {
+            return em.createQuery(
+                    "SELECT COUNT(u) FROM User u WHERE LOWER(u.email) = LOWER(:email) AND u.id <> :id",
+                    Long.class
+            ).setParameter("email", email).setParameter("id", excludedId).getSingleResult() > 0;
+        }
     }
 
     @Override

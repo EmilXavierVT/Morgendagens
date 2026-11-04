@@ -1,18 +1,31 @@
 package app.services.entityServices;
 
 import app.dao.UserDAO;
+import app.dto.UserUpdateDTO;
+import app.entities.Role;
+import app.entities.Tenant;
 import app.entities.User;
 import app.exceptions.ApiException;
 import jakarta.persistence.EntityManagerFactory;
+import org.mindrot.jbcrypt.BCrypt;
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public class UserService implements CrudService<User> {
     private final UserDAO userDAO;
+    private final TenantService tenantService;
+    private static final Set<String> EDITABLE_ROLES = Set.of(
+            "USER", "ADMIN", "EMPLOYEE", "CLEANING_STAFF", "CLEANING_MANAGER",
+            "CLEANING_CLIENT", "SUBSCRIBER", "FLEX", "YOUTH_ISLAND");
+    private static final Pattern EMAIL = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
     public UserService(EntityManagerFactory emf) {
         if (emf == null) throw new IllegalArgumentException("EntityManagerFactory cannot be null");
         this.userDAO = new UserDAO(emf);
+        this.tenantService = new TenantService(emf);
     }
 
     public User create(User user) {
@@ -24,6 +37,50 @@ public class UserService implements CrudService<User> {
     }
 
     public User update(User user) {
+        return userDAO.update(user);
+    }
+
+    public User updateDetails(Long id, UserUpdateDTO dto) {
+        User user = userDAO.getByIdWithMessagesAndRoles(id);
+        if (user == null) throw new ApiException(404, "User not found");
+
+        if (dto.getEmail() != null) {
+            String email = dto.getEmail().trim();
+            if (!EMAIL.matcher(email).matches()) throw new ApiException(400, "Enter a valid email address");
+            if (userDAO.isEmailInUse(email, id)) throw new ApiException(409, "Email is already in use");
+            user.setEmail(email);
+        }
+        if (dto.getZipCode() != null) {
+            if (dto.getZipCode() < 0) throw new ApiException(400, "Zip code must be a non-negative number");
+            user.setZipCode(dto.getZipCode());
+        }
+        if (dto.getTenantId() != null) {
+            Tenant tenant = tenantService.getById(dto.getTenantId());
+            if (tenant == null) throw new ApiException(400, "Tenant not found");
+            user.setTenant(tenant);
+        }
+        if (dto.getRoles() != null) {
+            if (dto.getRoles().isEmpty()
+                    || dto.getRoles().stream().anyMatch(role -> role == null || !EDITABLE_ROLES.contains(role))) {
+                throw new ApiException(400, "Choose at least one valid role");
+            }
+            Set<Role> roles = new HashSet<>();
+            for (String role : dto.getRoles()) roles.add(new Role(role));
+            user.setRoles(roles);
+        }
+        if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
+            if (dto.getPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
+                throw new ApiException(400, "Password must be at most 72 UTF-8 bytes");
+            }
+            user.setPassword(BCrypt.hashpw(dto.getPassword(), BCrypt.gensalt(12)));
+        }
+        if (dto.getFirstName() != null) user.setFirstName(dto.getFirstName().trim());
+        if (dto.getLastName() != null) user.setLastName(dto.getLastName().trim());
+        if (dto.getStreetName() != null) user.setStreetName(dto.getStreetName().trim());
+        if (dto.getStreetNumber() != null) user.setStreetNumber(dto.getStreetNumber().trim());
+        if (dto.getPhoneNumber() != null) user.setPhoneNumber(dto.getPhoneNumber().trim());
+
+        // Update the existing account so omitted fields and message ownership stay intact.
         return userDAO.update(user);
     }
 

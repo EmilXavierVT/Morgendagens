@@ -272,11 +272,21 @@ All endpoints are prefixed with `/api`. Protected endpoints require an `Authoriz
 
 | Method | Path | Access | Description |
 |---|---|---|---|
-| `GET` | `/api/user/all` | ADMIN | Get all users |
-| `GET` | `/api/user/{id}` | ADMIN | Get user by ID |
+| `GET` | `/api/user/all` | USER, ADMIN | Get all users |
+| `GET` | `/api/user/{id}` | USER, ADMIN | Get user by ID |
 | `POST` | `/api/user/` | ADMIN | Create a user |
-| `PUT` | `/api/user/{id}` | ADMIN | Update a user |
+| `PUT` | `/api/user/{id}` | USER (own account), ADMIN | Update account details; admins can also change tenant, roles, and password |
 | `DELETE` | `/api/user/{id}` | ADMIN | Delete a user |
+
+User responses never include passwords or password hashes. `PUT /api/user/{id}` accepts
+`firstName`, `lastName`, `email`, `phoneNumber`, `streetName`, `streetNumber`, and `zipCode`.
+Administrators can additionally supply `tenantId`, a non-empty `roles` array, and a new
+plaintext `password`. Omitted fields are preserved; an omitted, empty, or whitespace-only
+password keeps the current password. New passwords are BCrypt-hashed and limited to 72
+UTF-8 bytes. Message history is preserved and cannot be reassigned through this endpoint.
+Duplicate email addresses return `409`; invalid fields return `400`; missing users return
+`404`. Regular users change their own password through `PUT /api/auth/change-password`,
+which requires their current password. Role changes take effect on the next login.
 
 ---
 

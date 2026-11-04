@@ -39,7 +39,6 @@ public class UserMapper {
         dto.setStreetNumber(user.getStreetNumber());
         dto.setZipCode(user.getZipCode());
         dto.setEmail(user.getEmail());
-        dto.setPassword(user.getPassword());
         dto.setPhoneNumber(user.getPhoneNumber());
 
         Tenant tenant = user.getTenant();
@@ -68,10 +67,8 @@ public class UserMapper {
         user.setZipCode(dto.getZipCode());
         user.setEmail(dto.getEmail());
         String rawPassword = dto.getPassword();
-        if (rawPassword != null && !rawPassword.startsWith("$2")) {
+        if (rawPassword != null) {
             user.setPassword(BCrypt.hashpw(rawPassword, BCrypt.gensalt(12)));
-        } else {
-            user.setPassword(rawPassword);
         }
         user.setPhoneNumber(dto.getPhoneNumber());
 

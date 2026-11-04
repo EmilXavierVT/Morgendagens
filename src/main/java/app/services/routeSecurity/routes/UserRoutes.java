@@ -1,7 +1,9 @@
 package app.services.routeSecurity.routes;
 
 import app.dto.UserDTO;
+import app.dto.UserUpdateDTO;
 import app.entities.User;
+import app.exceptions.ApiException;
 import app.services.dtoConverter.UserMapper;
 import app.services.entityServices.UserService;
 import io.javalin.http.Context;
@@ -11,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class UserRoutes {
     private final UserService userService;
@@ -53,14 +56,26 @@ public class UserRoutes {
 
     public void update(Context ctx) {
         Long id = ctx.pathParamAsClass("id", Long.class).get();
-        UserDTO dto = ctx.bodyValidator(UserDTO.class).get();
-        dto.setId(id);
-        User user = userMapper.fromDto(dto);
-        User updated = userService.update(user);
-        if (updated == null) {
-            ctx.status(404).result("User not found");
-            return;
+        UserDTO actor = ctx.attribute("user");
+        if (actor == null) throw new ApiException(401, "Not authenticated");
+        User existing = userService.getById(id);
+        if (existing == null) throw new ApiException(404, "User not found");
+
+        UserUpdateDTO dto = ctx.bodyValidator(UserUpdateDTO.class).get();
+        boolean admin = actor.getRoles().contains("ADMIN");
+        if (!admin) {
+            if (!Objects.equals(actor.getEmail(), existing.getEmail())) {
+                throw new ApiException(403, "Only administrators can edit other users");
+            }
+            if ((dto.getRoles() != null && !dto.getRoles().equals(existing.getRolesAsStrings()))
+                    || (dto.getTenantId() != null && !dto.getTenantId().equals(existing.getTenant().getId()))) {
+                throw new ApiException(403, "Only administrators can change roles or tenant");
+            }
+            if (dto.getPassword() != null && !dto.getPassword().isBlank()) {
+                throw new ApiException(403, "Use change-password with your current password");
+            }
         }
+        User updated = userService.updateDetails(id, dto);
         ctx.json(userMapper.toDto(updated));
     }
 

@@ -30,6 +30,6 @@ public  class UserDTOBuilder {
     }
 
     public String toString() {
-        return "UserDTO.UserDTOBuilder(username=" + this.email + ", password=" + this.password + ", roles=" + this.roles + ")";
+        return "UserDTO.UserDTOBuilder(username=" + this.email + ", roles=" + this.roles + ")";
     }
 }

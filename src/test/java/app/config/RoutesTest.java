@@ -1,6 +1,7 @@
 package app.config;
 
 import app.entities.Role;
+import app.entities.Message;
 import app.entities.Tenant;
 import app.entities.User;
 import app.services.entityServices.TenantService;
@@ -13,6 +14,8 @@ import jakarta.persistence.EntityManagerFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -340,6 +343,184 @@ class RoutesTest {
                 .body("firstName", equalTo("New"))
                 .body("streetName", equalTo("Updated Street"))
                 .body("streetNumber", equalTo("44B"));
+    }
+
+    @Test
+    void admin_can_edit_all_user_details_and_reset_password() {
+        long tenantId = createTenantId("admin-edit-original");
+        long newTenantId = createTenantId("admin-edit-new");
+        String email = "admin.edit." + System.nanoTime() + "@example.com";
+        String newEmail = "updated." + email;
+        long userId = createUserId(tenantId, "Before", "Edit", email);
+        assignCleaningClientRole(userId);
+
+        given()
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON)
+                .body("""
+                        {
+                          "tenantId": %d,
+                          "firstName": "After",
+                          "lastName": "Updated",
+                          "email": "%s",
+                          "phoneNumber": "+45 12345678",
+                          "streetName": "New Street",
+                          "streetNumber": "12B",
+                          "zipCode": 2100,
+                          "roles": ["USER", "EMPLOYEE"],
+                          "password": "$2-new-plaintext-password"
+                        }
+                        """.formatted(newTenantId, newEmail))
+                .when().put("/user/{id}", userId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) userId))
+                .body("tenantId", equalTo((int) newTenantId))
+                .body("firstName", equalTo("After"))
+                .body("lastName", equalTo("Updated"))
+                .body("email", equalTo(newEmail))
+                .body("phoneNumber", equalTo("+45 12345678"))
+                .body("streetName", equalTo("New Street"))
+                .body("streetNumber", equalTo("12B"))
+                .body("zipCode", equalTo(2100))
+                .body("roles", containsInAnyOrder("USER", "EMPLOYEE"))
+                .body("$", not(hasKey("password")));
+
+        loginAndGetToken(newEmail, "$2-new-plaintext-password");
+        given().contentType(ContentType.JSON)
+                .body(java.util.Map.of("email", newEmail, "password", "secret"))
+                .when().post("/auth/login").then().statusCode(401);
+        given().contentType(ContentType.JSON)
+                .body(java.util.Map.of("email", email, "password", "secret"))
+                .when().post("/auth/login").then().statusCode(401);
+
+        given().header("Authorization", "Bearer " + adminToken)
+                .when().get("/user/{id}", userId).then().statusCode(200)
+                .body("$", not(hasKey("password")));
+        given().header("Authorization", "Bearer " + adminToken)
+                .when().get("/user/all").then().statusCode(200)
+                .body("$", everyItem(not(hasKey("password"))));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"password\":\"\"}", "{\"password\":\"   \"}"})
+    void admin_edits_preserve_omitted_details_password_roles_and_messages(String body) {
+        long tenantId = createTenantId("admin-edit-preserve");
+        String email = "preserve.edit." + System.nanoTime() + "@example.com";
+        long userId = createUserId(tenantId, "Keep", "Name", email);
+        assignEmployeeRole(userId);
+        Long messageId;
+        try (EntityManager em = emf.createEntityManager()) {
+            em.getTransaction().begin();
+            Message message = Message.builder().user(em.find(User.class, userId)).context("Keep this message").build();
+            em.persist(message);
+            em.getTransaction().commit();
+            messageId = message.getId();
+        }
+
+        given().header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON).body(body)
+                .when().put("/user/{id}", userId).then().statusCode(200)
+                .body("firstName", equalTo("Keep"))
+                .body("lastName", equalTo("Name"))
+                .body("streetName", equalTo("Helper Street"))
+                .body("zipCode", equalTo(2800))
+                .body("tenantId", equalTo((int) tenantId))
+                .body("roles", hasItem("EMPLOYEE"))
+                .body("messageIds", hasItem(messageId.intValue()))
+                .body("$", not(hasKey("password")));
+        loginAndGetToken(email, "secret");
+
+        given().header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON).body("{\"firstName\":\"Changed\",\"messageIds\":[]}")
+                .when().put("/user/{id}", userId).then().statusCode(200)
+                .body("firstName", equalTo("Changed"))
+                .body("messageIds", hasItem(messageId.intValue()));
+    }
+
+    @Test
+    void regular_users_cannot_edit_another_account() {
+        long tenantId = createTenantId("admin-edit-protected");
+        long userId = createUserId(tenantId, "Protected", "User", "protected.edit." + System.nanoTime() + "@example.com");
+        given().header("Authorization", "Bearer " + userToken)
+                .contentType(ContentType.JSON).body("{\"password\":\"hijacked\",\"roles\":[\"ADMIN\"]}")
+                .when().put("/user/{id}", userId).then().statusCode(403);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{\"roles\":[\"ADMIN\"]}", "{\"password\":\"new-secret\"}", "{\"tenantId\":9223372036854775807}"})
+    void regular_users_cannot_change_their_own_privileged_fields(String body) {
+        long userId;
+        try (EntityManager em = emf.createEntityManager()) {
+            userId = em.createQuery("SELECT u.id FROM User u WHERE u.email = :email", Long.class)
+                    .setParameter("email", USER_EMAIL).getSingleResult();
+        }
+        given().header("Authorization", "Bearer " + userToken)
+                .contentType(ContentType.JSON).body(body)
+                .when().put("/user/{id}", userId).then().statusCode(403);
+    }
+
+    @Test
+    void regular_users_can_still_edit_their_own_profile() {
+        String email = "self.edit." + System.nanoTime() + "@example.com";
+        registerUser(email, "self-password");
+        String token = loginAndGetToken(email, "self-password");
+        long userId;
+        long tenantId;
+        try (EntityManager em = emf.createEntityManager()) {
+            User user = em.createQuery("SELECT u FROM User u WHERE u.email = :email", User.class)
+                    .setParameter("email", email).getSingleResult();
+            userId = user.getId();
+            tenantId = user.getTenant().getId();
+        }
+        given().header("Authorization", "Bearer " + token)
+                .contentType(ContentType.JSON)
+                .body(java.util.Map.of("firstName", "Self", "lastName", "Updated", "zipCode", 2200,
+                        "email", email, "tenantId", tenantId, "roles", java.util.List.of("USER")))
+                .when().put("/user/{id}", userId).then().statusCode(200)
+                .body("firstName", equalTo("Self"))
+                .body("zipCode", equalTo(2200))
+                .body("roles", contains("USER"));
+        loginAndGetToken(email, "self-password");
+    }
+
+    @Test
+    void duplicate_email_returns_conflict_without_changing_account() {
+        long tenantId = createTenantId("admin-edit-duplicate");
+        String email = "duplicate.edit." + System.nanoTime() + "@example.com";
+        long userId = createUserId(tenantId, "Original", "User", email);
+        assignEmployeeRole(userId);
+        given().header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON)
+                .body(java.util.Map.of("email", USER_EMAIL.toUpperCase(java.util.Locale.ROOT),
+                        "firstName", "Must not change", "password", "must-not-change"))
+                .when().put("/user/{id}", userId).then().statusCode(409);
+        given().header("Authorization", "Bearer " + adminToken)
+                .when().get("/user/{id}", userId).then().statusCode(200)
+                .body("firstName", equalTo("Original"))
+                .body("email", equalTo(email));
+        loginAndGetToken(email, "secret");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "{\"email\":\"invalid\"}", "{\"zipCode\":-1}", "{\"roles\":[]}",
+            "{\"roles\":[\"ANYONE\"]}", "{\"roles\":[null]}", "{\"tenantId\":9223372036854775807}",
+            "{\"password\":\"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijk\"}"
+    })
+    void invalid_admin_edits_return_bad_request(String body) {
+        long tenantId = createTenantId("admin-edit-invalid");
+        long userId = createUserId(tenantId, "Original", "User", "invalid.edit." + System.nanoTime() + "@example.com");
+        given().header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON).body(body)
+                .when().put("/user/{id}", userId).then().statusCode(400);
+    }
+
+    @Test
+    void updating_a_missing_user_returns_not_found() {
+        given().header("Authorization", "Bearer " + adminToken)
+                .contentType(ContentType.JSON).body("{\"firstName\":\"Missing\"}")
+                .when().put("/user/{id}", Long.MAX_VALUE).then().statusCode(404);
     }
 
     @Test
