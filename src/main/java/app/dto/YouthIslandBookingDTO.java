@@ -35,4 +35,5 @@ public class YouthIslandBookingDTO {
     private LocalDateTime updatedAt;
     private int totalGuests;
     private List<YouthIslandBookingItemDTO> items = new ArrayList<>();
+    private List<YouthIslandBookingEditDTO> editHistory = new ArrayList<>();
 }

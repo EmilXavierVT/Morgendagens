@@ -24,6 +24,7 @@ final class EntityRegistry {
         configuration.addAnnotatedClass(SubscriptionDeal.class);
         configuration.addAnnotatedClass(YouthIslandBooking.class);
         configuration.addAnnotatedClass(YouthIslandBookingItem.class);
+        configuration.addAnnotatedClass(YouthIslandBookingEdit.class);
         configuration.addAnnotatedClass(YouthIslandInvoiceRecord.class);
     }
 }

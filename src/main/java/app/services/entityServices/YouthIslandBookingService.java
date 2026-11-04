@@ -5,6 +5,7 @@ import app.dao.YouthIslandBookingDAO;
 import app.entities.User;
 import app.entities.YouthIslandBooking;
 import app.entities.YouthIslandBookingItem;
+import app.entities.YouthIslandBookingEdit;
 import app.exceptions.ApiException;
 import jakarta.persistence.EntityManagerFactory;
 
@@ -44,11 +45,18 @@ public class YouthIslandBookingService implements CrudService<YouthIslandBooking
 
     @Override
     public YouthIslandBooking update(YouthIslandBooking booking) {
+        throw new ApiException(400, "The user editing the Youth Island booking is required");
+    }
+
+    public YouthIslandBooking update(YouthIslandBooking booking, User editor) {
         if (booking == null || booking.getId() == null) {
             throw new ApiException(400, "Youth Island booking id is required");
         }
+        if (editor == null || editor.getId() == null) {
+            throw new ApiException(400, "The user editing the Youth Island booking is required");
+        }
         validate(booking);
-        YouthIslandBooking updated = bookingDAO.update(booking);
+        YouthIslandBooking updated = bookingDAO.update(booking, editor);
         if (updated == null) throw new ApiException(404, "Youth Island booking not found");
         return updated;
     }
@@ -65,6 +73,10 @@ public class YouthIslandBookingService implements CrudService<YouthIslandBooking
 
     public List<YouthIslandBooking> getByOrderedByUserId(Long userId) {
         return bookingDAO.getByOrderedByUserId(userId);
+    }
+
+    public List<YouthIslandBookingEdit> getEditHistory(Long bookingId) {
+        return bookingDAO.getEditHistory(bookingId);
     }
 
     private void validate(YouthIslandBooking booking) {

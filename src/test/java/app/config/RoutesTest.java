@@ -1248,7 +1248,7 @@ class RoutesTest {
     // ─── Youth Island booking routes ──────────────────────────────────────────
 
     @Test
-    void youth_island_user_can_create_and_read_own_booking() {
+    void youth_island_users_share_and_edit_bookings_with_audit_tracing() {
         String youthEmail = "youth.booking." + System.nanoTime() + "@example.com";
         long tenantId = createTenantId("tenant-youth-island-booking");
         long youthUserId = createUserId(tenantId, "Anne", "Ungdomsoen", youthEmail);
@@ -1355,6 +1355,10 @@ class RoutesTest {
                 .body("items", hasSize(1))
                 .body("items[0].productNumber", equalTo("YI-2026-MAIN-UPDATED"))
                 .body("items[0].productName", equalTo("Youth Island updated main"))
+                .body("editHistory", hasSize(1))
+                .body("editHistory[0].editedByUserId", equalTo((int) youthUserId))
+                .body("editHistory[0].editedByName", equalTo("Anne Ungdomsoen"))
+                .body("editHistory[0].editedAt", notNullValue())
                 .body("updatedAt", notNullValue());
 
         String otherYouthEmail = "other.youth.booking." + System.nanoTime() + "@example.com";
@@ -1364,11 +1368,32 @@ class RoutesTest {
 
         given()
                 .header("Authorization", "Bearer " + otherYouthToken)
+                .when().get("/youth-island-booking/all")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(1))
+                .body("[0].id", equalTo((int) bookingId));
+
+        given()
+                .header("Authorization", "Bearer " + otherYouthToken)
+                .when().get("/youth-island-booking/{id}", bookingId)
+                .then()
+                .statusCode(200)
+                .body("id", equalTo((int) bookingId));
+
+        given()
+                .header("Authorization", "Bearer " + otherYouthToken)
                 .contentType(ContentType.JSON)
                 .body(updateBody)
                 .when().put("/youth-island-booking/{id}", bookingId)
                 .then()
-                .statusCode(403);
+                .statusCode(200)
+                .body("id", equalTo((int) bookingId))
+                .body("orderedByUserId", equalTo((int) youthUserId))
+                .body("editHistory", hasSize(2))
+                .body("editHistory[1].editedByUserId", equalTo((int) otherYouthUserId))
+                .body("editHistory[1].editedByName", equalTo("Other Youth"))
+                .body("editHistory[1].editedAt", notNullValue());
 
         given()
                 .header("Authorization", "Bearer " + youthToken)

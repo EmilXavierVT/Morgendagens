@@ -2,8 +2,10 @@ package app.services.routeSecurity.routes;
 
 import app.dto.UserDTO;
 import app.dto.YouthIslandBookingDTO;
+import app.dto.YouthIslandBookingEditDTO;
 import app.entities.User;
 import app.entities.YouthIslandBooking;
+import app.entities.YouthIslandBookingEdit;
 import app.exceptions.ApiException;
 import app.services.dtoConverter.YouthIslandBookingMapper;
 import app.services.entityServices.UserService;
@@ -29,15 +31,10 @@ public class YouthIslandBookingRoutes {
 
     public void getAll(Context ctx) {
         UserDTO authenticatedUser = requireAuthenticatedUser(ctx);
+        ensureReadableBy(authenticatedUser);
         List<YouthIslandBookingDTO> bookings = new ArrayList<>();
 
-        if (hasRole(authenticatedUser, "ADMIN")) {
-            bookingService.getAll().forEach(booking -> bookings.add(bookingMapper.toDto(booking)));
-        } else {
-            User currentUser = requireCurrentUser(authenticatedUser);
-            bookingService.getByOrderedByUserId(currentUser.getId())
-                    .forEach(booking -> bookings.add(bookingMapper.toDto(booking)));
-        }
+        bookingService.getAll().forEach(booking -> bookings.add(toDto(booking)));
 
         ctx.json(bookings);
     }
@@ -48,8 +45,8 @@ public class YouthIslandBookingRoutes {
         YouthIslandBooking booking = bookingService.getById(id);
         if (booking == null) throw new ApiException(404, "Youth Island booking not found");
 
-        ensureVisibleTo(booking, authenticatedUser);
-        ctx.json(bookingMapper.toDto(booking));
+        ensureReadableBy(authenticatedUser);
+        ctx.json(toDto(booking));
     }
 
     public void create(Context ctx) {
@@ -64,7 +61,7 @@ public class YouthIslandBookingRoutes {
         normalizeBookingDates(booking);
 
         YouthIslandBooking created = bookingService.create(booking);
-        ctx.status(201).json(bookingMapper.toDto(created));
+        ctx.status(201).json(toDto(created));
     }
 
     public void update(Context ctx) {
@@ -72,7 +69,8 @@ public class YouthIslandBookingRoutes {
         Long id = ctx.pathParamAsClass("id", Long.class).get();
         YouthIslandBooking existing = bookingService.getById(id);
         if (existing == null) throw new ApiException(404, "Youth Island booking not found");
-        ensureVisibleTo(existing, authenticatedUser);
+        ensureEditableBy(authenticatedUser);
+        User editor = requireCurrentUser(authenticatedUser);
 
         YouthIslandBookingDTO dto = ctx.bodyValidator(YouthIslandBookingDTO.class).get();
         YouthIslandBooking booking = bookingMapper.fromDto(dto);
@@ -82,8 +80,8 @@ public class YouthIslandBookingRoutes {
         booking.getItems().forEach(item -> item.setId(null));
         normalizeBookingDates(booking);
 
-        YouthIslandBooking updated = bookingService.update(booking);
-        ctx.json(bookingMapper.toDto(updated));
+        YouthIslandBooking updated = bookingService.update(booking, editor);
+        ctx.json(toDto(updated));
     }
 
     private void normalizeBookingDates(YouthIslandBooking booking) {
@@ -113,12 +111,40 @@ public class YouthIslandBookingRoutes {
         return user;
     }
 
-    private void ensureVisibleTo(YouthIslandBooking booking, UserDTO authenticatedUser) {
-        if (hasRole(authenticatedUser, "ADMIN")) return;
-        User currentUser = requireCurrentUser(authenticatedUser);
-        if (!booking.getOrderedBy().getId().equals(currentUser.getId())) {
-            throw new ApiException(403, "You can only access your own Youth Island bookings");
-        }
+    private void ensureReadableBy(UserDTO authenticatedUser) {
+        if (hasRole(authenticatedUser, "ADMIN") || hasRole(authenticatedUser, "YOUTH_ISLAND")) return;
+        throw new ApiException(403, "Youth Island access is required");
+    }
+
+    private void ensureEditableBy(UserDTO authenticatedUser) {
+        ensureReadableBy(authenticatedUser);
+    }
+
+    private YouthIslandBookingDTO toDto(YouthIslandBooking booking) {
+        YouthIslandBookingDTO dto = bookingMapper.toDto(booking);
+        List<YouthIslandBookingEditDTO> editHistory = bookingService.getEditHistory(booking.getId()).stream()
+                .map(this::toEditDto)
+                .toList();
+        dto.setEditHistory(editHistory);
+        return dto;
+    }
+
+    private YouthIslandBookingEditDTO toEditDto(YouthIslandBookingEdit edit) {
+        User editor = edit.getEditedBy();
+        return new YouthIslandBookingEditDTO(
+                edit.getId(),
+                editor.getId(),
+                buildName(editor),
+                editor.getEmail(),
+                edit.getEditedAt()
+        );
+    }
+
+    private String buildName(User user) {
+        String name = String.join(" ",
+                user.getFirstName() == null ? "" : user.getFirstName().trim(),
+                user.getLastName() == null ? "" : user.getLastName().trim()).trim();
+        return name.isBlank() ? user.getEmail() : name;
     }
 
     private boolean hasRole(UserDTO user, String roleName) {

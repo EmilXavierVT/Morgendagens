@@ -1,6 +1,8 @@
 package app.dao;
 
 import app.entities.YouthIslandBooking;
+import app.entities.YouthIslandBookingEdit;
+import app.entities.User;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.NoResultException;
@@ -48,6 +50,10 @@ public class YouthIslandBookingDAO implements IDAO<YouthIslandBooking> {
 
     @Override
     public YouthIslandBooking update(YouthIslandBooking booking) {
+        throw new IllegalArgumentException("An editor is required when updating a Youth Island booking");
+    }
+
+    public YouthIslandBooking update(YouthIslandBooking booking, User editor) {
         try (EntityManager em = emf.createEntityManager()) {
             em.getTransaction().begin();
             YouthIslandBooking managed = em.find(YouthIslandBooking.class, booking.getId());
@@ -69,6 +75,12 @@ public class YouthIslandBookingDAO implements IDAO<YouthIslandBooking> {
             booking.getItems().forEach(item -> item.setId(null));
             managed.setItems(booking.getItems());
 
+            YouthIslandBookingEdit edit = YouthIslandBookingEdit.builder()
+                    .booking(managed)
+                    .editedBy(em.getReference(User.class, editor.getId()))
+                    .build();
+            em.persist(edit);
+
             em.getTransaction().commit();
             return getById(managed.getId());
         }
@@ -86,6 +98,20 @@ public class YouthIslandBookingDAO implements IDAO<YouthIslandBooking> {
 
     public List<YouthIslandBooking> getByOrderedByUserId(Long userId) {
         return findBookings(userId);
+    }
+
+    public List<YouthIslandBookingEdit> getEditHistory(Long bookingId) {
+        try (EntityManager em = emf.createEntityManager()) {
+            return em.createQuery("""
+                            SELECT edit
+                            FROM YouthIslandBookingEdit edit
+                            JOIN FETCH edit.editedBy
+                            WHERE edit.booking.id = :bookingId
+                            ORDER BY edit.editedAt ASC, edit.id ASC
+                            """, YouthIslandBookingEdit.class)
+                    .setParameter("bookingId", bookingId)
+                    .getResultList();
+        }
     }
 
     private List<YouthIslandBooking> findBookings(Long userId) {
