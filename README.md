@@ -365,6 +365,19 @@ name and non-negative `unitPriceOverride`. Legacy `DIVERSE` lines remain support
 and resolve to the available special-serving product when invoicing. The existing
 event discount also applies to the special price.
 
+Booking responses include a `version` and a compact `editHistory`. Send that version
+back when updating, together with each existing serving line's `id`. A stale version
+returns `409` without overwriting the booking. Serving IDs from another booking, or
+duplicate IDs, return `400`.
+
+`GET /api/youth-island-booking/{id}/history` is available to ADMIN and YOUTH_ISLAND
+users. It returns each version's editor name/email, UTC timestamp, before/after
+snapshots, and field changes including added/removed serving lines. The booking and
+its immutable history are saved in one transaction. Editor identity is captured at
+save time so later profile edits do not rewrite the audit trail. Older metadata-only
+entries remain visible with `detailsAvailable: false`; their original content cannot
+be reconstructed. Full version details are loaded separately from booking lists.
+
 ## Authentication & Security
 
 **Registration & Login flow:**

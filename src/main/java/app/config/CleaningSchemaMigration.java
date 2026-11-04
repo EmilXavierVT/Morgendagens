@@ -27,6 +27,10 @@ final class CleaningSchemaMigration {
                     .executeUpdate();
             em.createNativeQuery("ALTER TABLE IF EXISTS youth_island_booking_items ALTER COLUMN room DROP NOT NULL")
                     .executeUpdate();
+            em.createNativeQuery("ALTER TABLE IF EXISTS youth_island_booking_edits ADD COLUMN IF NOT EXISTS before_snapshot TEXT, ADD COLUMN IF NOT EXISTS after_snapshot TEXT, ADD COLUMN IF NOT EXISTS edited_by_name VARCHAR(512), ADD COLUMN IF NOT EXISTS edited_by_email VARCHAR(255), ADD COLUMN IF NOT EXISTS recorded_at TIMESTAMP WITH TIME ZONE, ADD COLUMN IF NOT EXISTS revision BIGINT")
+                    .executeUpdate();
+            em.createNativeQuery("CREATE INDEX IF NOT EXISTS idx_youth_booking_edits_booking ON youth_island_booking_edits (booking_id, id)")
+                    .executeUpdate();
             em.getTransaction().commit();
         }
     }

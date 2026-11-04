@@ -10,6 +10,7 @@ import app.exceptions.ApiException;
 import app.services.dtoConverter.YouthIslandBookingMapper;
 import app.services.entityServices.UserService;
 import app.services.entityServices.YouthIslandBookingService;
+import app.services.entityServices.YouthIslandBookingAudit;
 import io.javalin.http.Context;
 import jakarta.persistence.EntityManagerFactory;
 
@@ -77,11 +78,18 @@ public class YouthIslandBookingRoutes {
         booking.setId(id);
         booking.setOrderedBy(existing.getOrderedBy());
         booking.setCreatedAt(existing.getCreatedAt());
-        booking.getItems().forEach(item -> item.setId(null));
         normalizeBookingDates(booking);
 
-        YouthIslandBooking updated = bookingService.update(booking, editor);
+        YouthIslandBooking updated = bookingService.update(booking, editor, dto.getVersion());
         ctx.json(toDto(updated));
+    }
+
+    public void getHistory(Context ctx) {
+        UserDTO authenticatedUser = requireAuthenticatedUser(ctx);
+        ensureReadableBy(authenticatedUser);
+        Long id = ctx.pathParamAsClass("id", Long.class).get();
+        if (bookingService.getById(id) == null) throw new ApiException(404, "Youth Island booking not found");
+        ctx.json(editDtos(id, true));
     }
 
     private void normalizeBookingDates(YouthIslandBooking booking) {
@@ -122,22 +130,37 @@ public class YouthIslandBookingRoutes {
 
     private YouthIslandBookingDTO toDto(YouthIslandBooking booking) {
         YouthIslandBookingDTO dto = bookingMapper.toDto(booking);
-        List<YouthIslandBookingEditDTO> editHistory = bookingService.getEditHistory(booking.getId()).stream()
-                .map(this::toEditDto)
-                .toList();
+        List<YouthIslandBookingEditDTO> editHistory = editDtos(booking.getId(), false);
         dto.setEditHistory(editHistory);
+        dto.setVersion((long) editHistory.size() + 1);
         return dto;
     }
 
-    private YouthIslandBookingEditDTO toEditDto(YouthIslandBookingEdit edit) {
+    private List<YouthIslandBookingEditDTO> editDtos(Long bookingId, boolean details) {
+        List<YouthIslandBookingEditDTO> dtos = new ArrayList<>();
+        for (YouthIslandBookingEdit edit : bookingService.getEditHistory(bookingId)) {
+            dtos.add(toEditDto(edit, details, dtos.size() + 2L));
+        }
+        return dtos;
+    }
+
+    private YouthIslandBookingEditDTO toEditDto(YouthIslandBookingEdit edit, boolean details, long fallbackVersion) {
         User editor = edit.getEditedBy();
-        return new YouthIslandBookingEditDTO(
-                edit.getId(),
-                editor.getId(),
-                buildName(editor),
-                editor.getEmail(),
-                edit.getEditedAt()
-        );
+        YouthIslandBookingEditDTO dto = new YouthIslandBookingEditDTO();
+        dto.setId(edit.getId());
+        dto.setEditedByUserId(editor.getId());
+        dto.setEditedByName(edit.getEditedByName() != null ? edit.getEditedByName() : buildName(editor));
+        dto.setEditedByEmail(edit.getEditedByEmail() != null ? edit.getEditedByEmail() : editor.getEmail());
+        dto.setEditedAt(edit.getEditedAt());
+        dto.setRecordedAt(edit.getRecordedAt());
+        dto.setVersion(edit.getRevision() != null ? edit.getRevision() : fallbackVersion);
+        dto.setDetailsAvailable(edit.getBeforeSnapshot() != null && edit.getAfterSnapshot() != null);
+        if (details && dto.isDetailsAvailable()) {
+            dto.setBeforeSnapshot(YouthIslandBookingAudit.read(edit.getBeforeSnapshot()));
+            dto.setAfterSnapshot(YouthIslandBookingAudit.read(edit.getAfterSnapshot()));
+            dto.setChanges(YouthIslandBookingAudit.changes(dto.getBeforeSnapshot(), dto.getAfterSnapshot()));
+        }
+        return dto;
     }
 
     private String buildName(User user) {

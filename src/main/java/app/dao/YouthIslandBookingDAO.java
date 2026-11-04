@@ -2,13 +2,23 @@ package app.dao;
 
 import app.entities.YouthIslandBooking;
 import app.entities.YouthIslandBookingEdit;
+import app.entities.YouthIslandBookingItem;
 import app.entities.User;
+import app.exceptions.ApiException;
+import app.services.entityServices.YouthIslandBookingAudit;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.NoResultException;
+import jakarta.persistence.LockModeType;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class YouthIslandBookingDAO implements IDAO<YouthIslandBooking> {
@@ -54,36 +64,100 @@ public class YouthIslandBookingDAO implements IDAO<YouthIslandBooking> {
     }
 
     public YouthIslandBooking update(YouthIslandBooking booking, User editor) {
+        return update(booking, editor, null);
+    }
+
+    public YouthIslandBooking update(YouthIslandBooking booking, User editor, Long expectedVersion) {
         try (EntityManager em = emf.createEntityManager()) {
             em.getTransaction().begin();
-            YouthIslandBooking managed = em.find(YouthIslandBooking.class, booking.getId());
-            if (managed == null) {
-                em.getTransaction().rollback();
-                return null;
+            try {
+                YouthIslandBooking managed = em.find(YouthIslandBooking.class, booking.getId(), LockModeType.PESSIMISTIC_WRITE);
+                if (managed == null) {
+                    em.getTransaction().rollback();
+                    return null;
+                }
+
+                long version = em.createQuery("SELECT COUNT(edit) FROM YouthIslandBookingEdit edit WHERE edit.booking.id = :id", Long.class)
+                        .setParameter("id", booking.getId()).getSingleResult() + 1;
+                if (expectedVersion != null && expectedVersion != version) {
+                    throw new ApiException(409, "Booking was changed by another person. Reload it before saving your changes.");
+                }
+                String before = YouthIslandBookingAudit.snapshot(managed);
+
+                managed.setCustomerName(booking.getCustomerName());
+                managed.setEventDate(booking.getEventDate());
+                managed.setStartDateTime(booking.getStartDateTime());
+                managed.setEndDateTime(booking.getEndDateTime());
+                managed.setAllergies(booking.getAllergies());
+                managed.setLocation(booking.getLocation());
+                managed.setSpectraReservationNumber(booking.getSpectraReservationNumber());
+                managed.setNotes(booking.getNotes());
+                managed.setSnackTrayCount(booking.getSnackTrayCount());
+                managed.setOrderDate(booking.getOrderDate());
+                updateItems(managed, booking.getItems());
+                managed.setUpdatedAt(LocalDateTime.now());
+                em.flush();
+
+                String editorName = String.join(" ", editor.getFirstName() == null ? "" : editor.getFirstName().trim(),
+                        editor.getLastName() == null ? "" : editor.getLastName().trim()).trim();
+
+                YouthIslandBookingEdit edit = YouthIslandBookingEdit.builder()
+                        .booking(managed)
+                        .editedBy(em.getReference(User.class, editor.getId()))
+                        .editedByName(editorName.isBlank() ? editor.getEmail() : editorName)
+                        .editedByEmail(editor.getEmail())
+                        .revision(version + 1)
+                        .beforeSnapshot(before)
+                        .afterSnapshot(YouthIslandBookingAudit.snapshot(managed))
+                        .build();
+                em.persist(edit);
+
+                em.getTransaction().commit();
+                return getById(managed.getId());
+            } catch (RuntimeException e) {
+                if (em.getTransaction().isActive()) em.getTransaction().rollback();
+                throw e;
             }
-
-            managed.setCustomerName(booking.getCustomerName());
-            managed.setEventDate(booking.getEventDate());
-            managed.setStartDateTime(booking.getStartDateTime());
-            managed.setEndDateTime(booking.getEndDateTime());
-            managed.setAllergies(booking.getAllergies());
-            managed.setLocation(booking.getLocation());
-            managed.setSpectraReservationNumber(booking.getSpectraReservationNumber());
-            managed.setNotes(booking.getNotes());
-            managed.setSnackTrayCount(booking.getSnackTrayCount());
-            managed.setOrderDate(booking.getOrderDate());
-            booking.getItems().forEach(item -> item.setId(null));
-            managed.setItems(booking.getItems());
-
-            YouthIslandBookingEdit edit = YouthIslandBookingEdit.builder()
-                    .booking(managed)
-                    .editedBy(em.getReference(User.class, editor.getId()))
-                    .build();
-            em.persist(edit);
-
-            em.getTransaction().commit();
-            return getById(managed.getId());
         }
+    }
+
+    private void updateItems(YouthIslandBooking managed, List<YouthIslandBookingItem> incoming) {
+        Map<Long, YouthIslandBookingItem> existing = new LinkedHashMap<>();
+        managed.getItems().forEach(item -> existing.put(item.getId(), item));
+        Set<Long> used = new HashSet<>();
+        List<YouthIslandBookingItem> items = new ArrayList<>();
+        boolean legacyPayload = incoming.stream().allMatch(item -> item.getId() == null);
+        for (YouthIslandBookingItem source : incoming) {
+            YouthIslandBookingItem target = source.getId() == null ? null : existing.get(source.getId());
+            if (source.getId() != null && (target == null || used.contains(source.getId()))) {
+                throw new ApiException(400, "Serving line id does not belong to this booking or was supplied more than once");
+            }
+            if (target == null && legacyPayload) {
+                target = existing.values().stream().filter(item -> !used.contains(item.getId()) && sameItem(item, source)).findFirst().orElse(null);
+            }
+            if (target == null) target = source;
+            if (target.getId() != null) used.add(target.getId());
+            target.setGuestCount(source.getGuestCount());
+            target.setServingTime(source.getServingTime());
+            target.setServingDateTime(source.getServingDateTime());
+            target.setProductNumber(source.getProductNumber());
+            target.setProductName(source.getProductName());
+            target.setUnitPriceOverride(source.getUnitPriceOverride());
+            target.setMenu(source.getMenu());
+            target.setRoom(source.getRoom());
+            items.add(target);
+        }
+        managed.setItems(items);
+    }
+
+    private boolean sameItem(YouthIslandBookingItem a, YouthIslandBookingItem b) {
+        return a.getGuestCount() == b.getGuestCount()
+                && Objects.equals(a.getServingDateTime(), b.getServingDateTime())
+                && Objects.equals(a.getProductNumber(), b.getProductNumber())
+                && Objects.equals(a.getProductName(), b.getProductName())
+                && Objects.equals(a.getMenu(), b.getMenu()) && Objects.equals(a.getRoom(), b.getRoom())
+                && Objects.equals(a.getUnitPriceOverride() == null ? null : a.getUnitPriceOverride().stripTrailingZeros(),
+                                  b.getUnitPriceOverride() == null ? null : b.getUnitPriceOverride().stripTrailingZeros());
     }
 
     @Override

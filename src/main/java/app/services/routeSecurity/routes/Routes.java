@@ -153,6 +153,7 @@ public class Routes {
 
             path("/youth-island-booking", () -> {
                 get("/all", youthIslandBookingRoutes::getAll, Role.ADMIN, Role.YOUTH_ISLAND);
+                get("/{id}/history", youthIslandBookingRoutes::getHistory, Role.ADMIN, Role.YOUTH_ISLAND);
                 post("/", youthIslandBookingRoutes::create, Role.ADMIN, Role.YOUTH_ISLAND);
                 get("/{id}", youthIslandBookingRoutes::getById, Role.ADMIN, Role.YOUTH_ISLAND);
                 put("/{id}", youthIslandBookingRoutes::update, Role.ADMIN, Role.YOUTH_ISLAND);

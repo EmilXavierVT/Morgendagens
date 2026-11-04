@@ -47,6 +47,10 @@ public class YouthIslandBookingService implements CrudService<YouthIslandBooking
     }
 
     public YouthIslandBooking update(YouthIslandBooking booking, User editor) {
+        return update(booking, editor, null);
+    }
+
+    public YouthIslandBooking update(YouthIslandBooking booking, User editor, Long expectedVersion) {
         if (booking == null || booking.getId() == null) {
             throw new ApiException(400, "Youth Island booking id is required");
         }
@@ -54,7 +58,7 @@ public class YouthIslandBookingService implements CrudService<YouthIslandBooking
             throw new ApiException(400, "The user editing the Youth Island booking is required");
         }
         validate(booking);
-        YouthIslandBooking updated = bookingDAO.update(booking, editor);
+        YouthIslandBooking updated = bookingDAO.update(booking, editor, expectedVersion);
         if (updated == null) throw new ApiException(404, "Youth Island booking not found");
         return updated;
     }

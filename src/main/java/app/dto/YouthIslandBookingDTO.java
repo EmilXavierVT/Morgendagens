@@ -18,6 +18,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class YouthIslandBookingDTO {
     private Long id;
+    private Long version;
     private Long orderedByUserId;
     private String orderedByName;
     private String orderedByEmail;
