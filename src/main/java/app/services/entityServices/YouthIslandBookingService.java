@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Set;
 
 public class YouthIslandBookingService implements CrudService<YouthIslandBooking> {
+    private static final String DIVERSE_PRODUCT_NUMBER = "DIVERSE";
+
     private final YouthIslandBookingDAO bookingDAO;
     private final UserDAO userDAO;
 
@@ -95,8 +97,16 @@ public class YouthIslandBookingService implements CrudService<YouthIslandBooking
             if (item.getServingTime() == null) throw new ApiException(400, "servingTime is required for every catering line");
             if (isBlank(item.getProductNumber())) throw new ApiException(400, "productNumber is required for every catering line");
             if (isBlank(item.getProductName())) throw new ApiException(400, "productName is required for every catering line");
-            if (isBlank(item.getMenu())) throw new ApiException(400, "menu is required for every catering line");
-            if (isBlank(item.getRoom())) throw new ApiException(400, "room is required for every catering line");
+            boolean diverseProduct = DIVERSE_PRODUCT_NUMBER.equalsIgnoreCase(item.getProductNumber().trim());
+            if (diverseProduct && item.getUnitPriceOverride() == null) {
+                throw new ApiException(400, "unitPriceOverride is required for DIVERSE catering lines");
+            }
+            if (!diverseProduct && item.getUnitPriceOverride() != null) {
+                throw new ApiException(400, "unitPriceOverride is only allowed for DIVERSE catering lines");
+            }
+            if (item.getUnitPriceOverride() != null && item.getUnitPriceOverride().signum() < 0) {
+                throw new ApiException(400, "unitPriceOverride cannot be negative");
+            }
         }
     }
 

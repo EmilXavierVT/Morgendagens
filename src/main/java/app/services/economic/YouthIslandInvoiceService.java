@@ -34,6 +34,7 @@ public class YouthIslandInvoiceService {
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Europe/Copenhagen");
     private static final DateTimeFormatter DISPLAY_DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter DISPLAY_TIME = DateTimeFormatter.ofPattern("HH:mm");
+    private static final String DIVERSE_PRODUCT_NUMBER = "DIVERSE";
     private static final String STANDARD_EVENT_CUSTOMER_NAME = "ungdomsø event";
     private static final String LEGACY_STANDARD_EVENT_CUSTOMER_NAME = "ungdomsøen event #1";
     private static final BigDecimal EVENT_DISCOUNT_PERCENTAGE = BigDecimal.valueOf(33);
@@ -180,7 +181,14 @@ public class YouthIslandInvoiceService {
                 if (product == null) {
                     throw new ApiException(400, "Missing available e-conomic product " + item.getProductNumber());
                 }
-                event.addLine(item, money(product.getPrice()));
+                boolean diverseProduct = DIVERSE_PRODUCT_NUMBER.equalsIgnoreCase(item.getProductNumber().trim());
+                if (diverseProduct && item.getUnitPriceOverride() == null) {
+                    throw new ApiException(400, "DIVERSE booking line is missing its price override");
+                }
+                BigDecimal unitNetPrice = diverseProduct
+                        ? money(item.getUnitPriceOverride())
+                        : money(product.getPrice());
+                event.addLine(item, unitNetPrice);
             }
             batch.addEvent(event);
         }
@@ -296,6 +304,10 @@ public class YouthIslandInvoiceService {
 
     private BigDecimal money(double value) {
         return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal money(BigDecimal value) {
+        return value.setScale(2, RoundingMode.HALF_UP);
     }
 
     private BigDecimal eventDiscount(boolean applyEventDiscount) {

@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.math.BigDecimal;
 import java.time.LocalTime;
 
 @Entity
@@ -48,9 +49,12 @@ public class YouthIslandBookingItem implements IEntity {
     @Column(name = "product_name", length = 300)
     private String productName;
 
-    @Column(nullable = false, columnDefinition = "text")
+    @Column(name = "unit_price_override", precision = 12, scale = 2)
+    private BigDecimal unitPriceOverride;
+
+    @Column(columnDefinition = "text")
     private String menu;
 
-    @Column(nullable = false)
+    @Column
     private String room;
 }

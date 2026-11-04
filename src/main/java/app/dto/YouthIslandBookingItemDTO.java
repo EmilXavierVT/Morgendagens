@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalTime;
 
 @Data
@@ -17,6 +18,7 @@ public class YouthIslandBookingItemDTO {
     private LocalTime servingTime;
     private String productNumber;
     private String productName;
+    private BigDecimal unitPriceOverride;
     private String menu;
     private String room;
 }

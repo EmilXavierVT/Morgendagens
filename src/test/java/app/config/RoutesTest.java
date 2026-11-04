@@ -1277,16 +1277,15 @@ class RoutesTest {
                               "servingTime": "17:45:00",
                               "productNumber": "YI-2026-MAIN",
                               "productName": "Youth Island vegetarian main",
-                              "menu": "Vegetarian main course with bread",
-                              "room": "Artilleri"
+                              "menu": "",
+                              "room": ""
                             },
                             {
                               "guestCount": 11,
                               "servingTime": "19:15:00",
-                              "productNumber": "YI-2026-DESSERT",
-                              "productName": "Youth Island dessert",
-                              "menu": "Dessert",
-                              "room": "Raketvaerksted"
+                              "productNumber": "DIVERSE",
+                              "productName": "Special dessert",
+                              "unitPriceOverride": 87.50
                             }
                           ]
                         }
@@ -1303,6 +1302,13 @@ class RoutesTest {
                 .body("totalGuests", equalTo(31))
                 .body("items", hasSize(2))
                 .body("items[0].productNumber", equalTo("YI-2026-MAIN"))
+                .body("items[0].menu", nullValue())
+                .body("items[0].room", nullValue())
+                .body("items[1].productNumber", equalTo("DIVERSE"))
+                .body("items[1].productName", equalTo("Special dessert"))
+                .body("items[1].unitPriceOverride", equalTo(87.50f))
+                .body("items[1].menu", nullValue())
+                .body("items[1].room", nullValue())
                 .extract()
                 .path("id");
         long bookingId = bookingIdNumber.longValue();

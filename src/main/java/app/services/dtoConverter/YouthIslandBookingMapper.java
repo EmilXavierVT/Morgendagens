@@ -45,6 +45,7 @@ public class YouthIslandBookingMapper {
                     item.getServingTime(),
                     item.getProductNumber(),
                     item.getProductName(),
+                    item.getUnitPriceOverride(),
                     item.getMenu(),
                     item.getRoom()
             ));
@@ -88,6 +89,7 @@ public class YouthIslandBookingMapper {
                         .servingTime(itemDto.getServingTime())
                         .productNumber(trimToNull(itemDto.getProductNumber()))
                         .productName(trimToNull(itemDto.getProductName()))
+                        .unitPriceOverride(itemDto.getUnitPriceOverride())
                         .menu(trimToNull(itemDto.getMenu()))
                         .room(trimToNull(itemDto.getRoom()))
                         .build());
