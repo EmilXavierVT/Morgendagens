@@ -15,6 +15,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
@@ -25,6 +26,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class CleaningInvoiceService {
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Europe/Copenhagen");
     private static final DateTimeFormatter INVOICE_LINE_DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private final EntityManagerFactory emf;
@@ -96,7 +98,7 @@ public class CleaningInvoiceService {
                 candidate.customerNumber(),
                 product.getEconomicProductNumber(),
                 candidate.invoiceLines(),
-                month.atEndOfMonth(),
+                LocalDate.now(BUSINESS_ZONE),
                 "Cleaning " + month,
                 candidate.appointmentCount() + " cleaning visit" + (candidate.appointmentCount() == 1 ? "" : "s")
                         + " in " + month
