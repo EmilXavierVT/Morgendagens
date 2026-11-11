@@ -1,5 +1,6 @@
 package app.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,4 +22,9 @@ public class CleaningInvoicePreviewDTO {
     private BigDecimal totalHours;
     private BigDecimal totalNetAmount;
     private List<CleaningInvoiceLineDTO> lines = new ArrayList<>();
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private BatchResult batch;
+
+    public record BatchResult(int succeeded, int failed, int skipped) {}
 }

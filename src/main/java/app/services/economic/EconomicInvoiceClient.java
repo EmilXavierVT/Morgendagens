@@ -103,7 +103,7 @@ public class EconomicInvoiceClient {
 
         ObjectNode created = postObject("/invoices/drafts", invoice, "createEconomicDraftInvoice");
         return new DraftInvoiceResult(
-                created.path("draftInvoiceNumber").isMissingNode() ? null : created.path("draftInvoiceNumber").asInt(),
+                readInvoiceNumber(created, "draftInvoiceNumber"),
                 created.path("self").asText(null)
         );
     }
@@ -119,9 +119,17 @@ public class EconomicInvoiceClient {
 
         ObjectNode booked = postObject("/invoices/booked", payload, "bookEconomicInvoice");
         return new BookedInvoiceResult(
-                booked.path("bookedInvoiceNumber").isMissingNode() ? null : booked.path("bookedInvoiceNumber").asInt(),
+                readInvoiceNumber(booked, "bookedInvoiceNumber"),
                 booked.path("self").asText(null)
         );
+    }
+
+    private static Integer readInvoiceNumber(ObjectNode response, String field) {
+        JsonNode number = response.path(field);
+        if (!number.isIntegralNumber() || !number.canConvertToInt() || number.intValue() <= 0) {
+            return null;
+        }
+        return number.intValue();
     }
 
     private ObjectNode getObject(String path, String operation) {
@@ -191,7 +199,7 @@ public class EconomicInvoiceClient {
         return new ApiException(status, message);
     }
 
-    private void requireCredentials() {
+    void requireCredentials() {
         if (appSecretToken == null || appSecretToken.isBlank()
                 || agreementGrantToken == null || agreementGrantToken.isBlank()) {
             throw new ApiException(500, "e-conomic credentials are not configured");

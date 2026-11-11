@@ -2,6 +2,7 @@ package app.services.economic;
 
 import app.dto.CleaningInvoiceLineDTO;
 import app.dto.CleaningInvoicePreviewDTO;
+import app.dto.CleaningInvoicePreviewDTO.BatchResult;
 import app.entities.CleaningAppointment;
 import app.entities.CleaningInvoiceRecord;
 import app.entities.Product;
@@ -46,51 +47,56 @@ public class CleaningInvoiceService {
         YearMonth month = parseMonth(invoiceMonth);
         try (EntityManager em = emf.createEntityManager()) {
             Product product = requireProduct(em, productNumber);
-            List<CleaningInvoiceRecord> records = findRecords(em, month.toString(), product.getEconomicProductNumber());
-            Map<Integer, CleaningInvoiceRecord> recordsByCustomer = new LinkedHashMap<>();
-            records.forEach(record -> recordsByCustomer.put(record.getEconomicCustomerNumber(), record));
-
-            Map<Integer, Candidate> candidates = buildCandidates(em, month, product, recordsByCustomer);
-            List<CleaningInvoiceLineDTO> lines = candidates.values().stream()
-                    .sorted(Comparator.comparing(Candidate::customerName, String.CASE_INSENSITIVE_ORDER))
-                    .map(Candidate::toDto)
-                    .toList();
-
-            return new CleaningInvoicePreviewDTO(
-                    month.toString(),
-                    product.getEconomicProductNumber(),
-                    product.getName(),
-                    money(product.getPrice()),
-                    lines.size(),
-                    lines.stream().mapToInt(CleaningInvoiceLineDTO::getAppointmentCount).sum(),
-                    lines.stream().map(CleaningInvoiceLineDTO::getQuantityHours).reduce(BigDecimal.ZERO, BigDecimal::add),
-                    lines.stream().map(CleaningInvoiceLineDTO::getNetAmount).reduce(BigDecimal.ZERO, BigDecimal::add),
-                    lines
-            );
+            return buildPreview(month, product, buildCandidates(em, month, product), null);
         }
     }
 
     public CleaningInvoicePreviewDTO createInvoices(String invoiceMonth, String productNumber, boolean bookAndSend, boolean force) {
         YearMonth month = parseMonth(invoiceMonth);
+        invoiceClient.requireCredentials();
 
         try (EntityManager em = emf.createEntityManager()) {
             Product product = requireProduct(em, productNumber);
-            List<CleaningInvoiceRecord> existingRecords = findRecords(em, month.toString(), product.getEconomicProductNumber());
-            Map<Integer, CleaningInvoiceRecord> recordsByCustomer = new LinkedHashMap<>();
-            existingRecords.forEach(record -> recordsByCustomer.put(record.getEconomicCustomerNumber(), record));
-            Map<Integer, Candidate> candidates = buildCandidates(em, month, product, recordsByCustomer);
-
+            Map<Integer, Candidate> candidates = buildCandidates(em, month, product);
+            int succeeded = 0;
+            int failed = 0;
+            int skipped = 0;
             for (Candidate candidate : candidates.values()) {
-                if (candidate.alreadyInvoiced() && !force) continue;
+                if (candidate.alreadyInvoiced() && !force) {
+                    skipped++;
+                    continue;
+                }
                 try {
                     createOneInvoice(em, month, product, candidate, bookAndSend);
+                    succeeded++;
                 } catch (ApiException e) {
                     candidate.error(e.getMessage());
+                    failed++;
                 }
             }
+            return buildPreview(month, product, candidates, new BatchResult(succeeded, failed, skipped));
         }
+    }
 
-        return preview(invoiceMonth, productNumber);
+    private CleaningInvoicePreviewDTO buildPreview(YearMonth month, Product product,
+                                                   Map<Integer, Candidate> candidates, BatchResult batch) {
+        List<CleaningInvoiceLineDTO> lines = candidates.values().stream()
+                .sorted(Comparator.comparing(Candidate::customerName, String.CASE_INSENSITIVE_ORDER))
+                .map(Candidate::toDto)
+                .toList();
+
+        return new CleaningInvoicePreviewDTO(
+                month.toString(),
+                product.getEconomicProductNumber(),
+                product.getName(),
+                money(product.getPrice()),
+                lines.size(),
+                lines.stream().mapToInt(CleaningInvoiceLineDTO::getAppointmentCount).sum(),
+                lines.stream().map(CleaningInvoiceLineDTO::getQuantityHours).reduce(BigDecimal.ZERO, BigDecimal::add),
+                lines.stream().map(CleaningInvoiceLineDTO::getNetAmount).reduce(BigDecimal.ZERO, BigDecimal::add),
+                lines,
+                batch
+        );
     }
 
     private void createOneInvoice(EntityManager em, YearMonth month, Product product, Candidate candidate, boolean bookAndSend) {
@@ -104,16 +110,36 @@ public class CleaningInvoiceService {
                         + " in " + month
         );
 
-        Integer bookedInvoiceNumber = null;
-        if (bookAndSend && draft.draftInvoiceNumber() != null) {
-            EconomicInvoiceClient.BookedInvoiceResult booked = invoiceClient.bookDraftInvoice(draft.draftInvoiceNumber(), true);
-            bookedInvoiceNumber = booked.bookedInvoiceNumber();
+        Integer draftInvoiceNumber = draft.draftInvoiceNumber();
+        if (draftInvoiceNumber == null) {
+            throw new ApiException(502, "e-conomic did not return a draft invoice number. Check e-conomic before retrying.");
         }
 
+        if (!bookAndSend || !candidate.alreadyInvoiced()) {
+            // Keep a known draft visible if booking fails, so the next batch skips it.
+            saveInvoiceRecord(em, month, product, candidate, draftInvoiceNumber, null);
+        }
+        if (!bookAndSend) return;
+
+        Integer bookedInvoiceNumber;
+        try {
+            bookedInvoiceNumber = invoiceClient.bookDraftInvoice(draftInvoiceNumber, true).bookedInvoiceNumber();
+            if (bookedInvoiceNumber == null) {
+                throw new ApiException(502, "e-conomic did not return a booked invoice number");
+            }
+        } catch (ApiException e) {
+            throw new ApiException(e.getCode(), e.getMessage()
+                    + ". Check draft #" + draftInvoiceNumber + " in e-conomic before retrying.");
+        }
+        saveInvoiceRecord(em, month, product, candidate, draftInvoiceNumber, bookedInvoiceNumber);
+    }
+
+    private void saveInvoiceRecord(EntityManager em, YearMonth month, Product product, Candidate candidate,
+                                   int draftInvoiceNumber, Integer bookedInvoiceNumber) {
         EntityTransaction tx = em.getTransaction();
         tx.begin();
         try {
-            CleaningInvoiceRecord record = candidate.existingRecord();
+            CleaningInvoiceRecord record = candidate.invoiceRecord;
             if (record == null) {
                 record = new CleaningInvoiceRecord();
                 record.setCreatedAt(LocalDateTime.now());
@@ -126,20 +152,24 @@ public class CleaningInvoiceService {
             record.setUnitNetPrice(candidate.unitNetPrice());
             record.setNetAmount(candidate.netAmount());
             record.setAppointmentCount(candidate.appointmentCount());
-            record.setDraftInvoiceNumber(draft.draftInvoiceNumber());
+            record.setDraftInvoiceNumber(draftInvoiceNumber);
             record.setBookedInvoiceNumber(bookedInvoiceNumber);
-            record.setSentByEmail(bookAndSend);
-            record.setStatus(bookAndSend ? "SENT" : "DRAFT");
-            em.merge(record);
+            record.setSentByEmail(bookedInvoiceNumber != null);
+            record.setStatus(bookedInvoiceNumber != null ? "SENT" : "DRAFT");
+            CleaningInvoiceRecord saved = em.merge(record);
             tx.commit();
+            candidate.invoiceRecord = saved;
         } catch (RuntimeException e) {
             if (tx.isActive()) tx.rollback();
             throw e;
         }
     }
 
-    private Map<Integer, Candidate> buildCandidates(EntityManager em, YearMonth month, Product product,
-                                                    Map<Integer, CleaningInvoiceRecord> recordsByCustomer) {
+    private Map<Integer, Candidate> buildCandidates(EntityManager em, YearMonth month, Product product) {
+        List<CleaningInvoiceRecord> records = findRecords(em, month.toString(), product.getEconomicProductNumber());
+        Map<Integer, CleaningInvoiceRecord> recordsByCustomer = new LinkedHashMap<>();
+        records.forEach(record -> recordsByCustomer.put(record.getEconomicCustomerNumber(), record));
+
         LocalDateTime start = month.atDay(1).atStartOfDay();
         LocalDateTime end = month.plusMonths(1).atDay(1).atStartOfDay();
 
@@ -267,7 +297,7 @@ public class CleaningInvoiceService {
         private final Integer customerNumber;
         private final String customerName;
         private final BigDecimal unitNetPrice;
-        private final CleaningInvoiceRecord existingRecord;
+        private CleaningInvoiceRecord invoiceRecord;
         private final Map<LocalDate, Integer> durationMinutesByDate = new LinkedHashMap<>();
         private int appointmentCount;
         private int durationMinutes;
@@ -278,7 +308,7 @@ public class CleaningInvoiceService {
             this.customerNumber = Objects.requireNonNull(customerNumber);
             this.customerName = customerName == null || customerName.isBlank() ? "Cleaning customer" : customerName;
             this.unitNetPrice = unitNetPrice;
-            this.existingRecord = existingRecord;
+            this.invoiceRecord = existingRecord;
         }
 
         private void addAppointment(LocalDate serviceDate, int minutes) {
@@ -293,8 +323,7 @@ public class CleaningInvoiceService {
         private int appointmentCount() { return appointmentCount; }
         private int durationMinutes() { return durationMinutes; }
         private BigDecimal unitNetPrice() { return unitNetPrice; }
-        private CleaningInvoiceRecord existingRecord() { return existingRecord; }
-        private boolean alreadyInvoiced() { return existingRecord != null; }
+        private boolean alreadyInvoiced() { return invoiceRecord != null; }
         private void error(String error) { this.error = error; }
 
         private BigDecimal quantityHours() {
@@ -328,9 +357,9 @@ public class CleaningInvoiceService {
                     unitNetPrice,
                     netAmount(),
                     alreadyInvoiced(),
-                    existingRecord != null ? existingRecord.getStatus() : null,
-                    existingRecord != null ? existingRecord.getDraftInvoiceNumber() : null,
-                    existingRecord != null ? existingRecord.getBookedInvoiceNumber() : null,
+                    invoiceRecord != null ? invoiceRecord.getStatus() : null,
+                    invoiceRecord != null ? invoiceRecord.getDraftInvoiceNumber() : null,
+                    invoiceRecord != null ? invoiceRecord.getBookedInvoiceNumber() : null,
                     error
             );
         }
